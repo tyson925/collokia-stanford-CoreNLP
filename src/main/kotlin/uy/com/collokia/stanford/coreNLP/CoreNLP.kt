@@ -5,17 +5,15 @@ import edu.stanford.nlp.pipeline.Annotation
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Encoders
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.*
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import java.io.Serializable
 import java.util.*
 
-public data class ParsedSentenceBean(var category: String, var categoryIndex: Double, var content: String, var tokens: List<String>, var poses: List<String>, var lemmas: List<String>,
-                                     var parses: List<String>, var ners: List<String>) : Serializable
+public data class ParsedSentenceBean(var category: String, var categoryIndex: Double, var content: String, var title : String,
+                                     var labels : List<String>, var tokens: String, var poses: String, var lemmas: String,
+                                     var parses: String, var ners: String) : Serializable
 
 
 public class CoreNLP : Transformer {
@@ -25,18 +23,19 @@ public class CoreNLP : Transformer {
 
     override fun transformSchema(p0: StructType?): StructType? {
         //throw UnsupportedOperationException()
-        var res = p0?.add(DataTypes.createStructField("tokens", DataTypes.createArrayType(DataTypes.StringType), false))
+        var res = p0?.add(DataTypes.createStructField("tokens", DataTypes.StringType, false))
         if (annotations.contains("pos")) {
-            res = res?.add(DataTypes.createStructField("poses", DataTypes.createArrayType(DataTypes.StringType), false))
+            res = res?.add(DataTypes.createStructField("poses", DataTypes.StringType, false))
         }
         if (annotations.contains("lemma")) {
-            res = res?.add(DataTypes.createStructField("lemmas", DataTypes.createArrayType(DataTypes.StringType), false))
+            //res = res?.add(DataTypes.createStructField("lemmas", DataTypes.createArrayType(DataTypes.StringType), false))
+            res = res?.add(DataTypes.createStructField("lemmas", DataTypes.StringType, false))
         }
         if (annotations.contains("parse")) {
-            res = res?.add(DataTypes.createStructField("parses", DataTypes.createArrayType(DataTypes.StringType), false))
+            res = res?.add(DataTypes.createStructField("parses", DataTypes.StringType, false))
         }
         if (annotations.contains("ner")) {
-            res = res?.add(DataTypes.createStructField("ners", DataTypes.createArrayType(DataTypes.StringType), false))
+            res = res?.add(DataTypes.createStructField("ners", DataTypes.StringType, false))
         }
         //res = res?.add(DataTypes.createStructField("null", DataTypes.NullType, true))
 
@@ -64,18 +63,33 @@ public class CoreNLP : Transformer {
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
-
         val isIndex = dataset?.columns()?.toList()?.contains("categoryIndex") ?: false
-
-        val selectContent = if (isIndex) {
-            dataset?.select(dataset.col("category"), dataset.col("categoryIndex"), dataset.col(inputColName))
-        } else {
-            dataset?.select(dataset.col("category"), dataset.col(inputColName))
+        val isTitle = dataset?.columns()?.toList()?.contains("title") ?: false
+        val isLabels = dataset?.columns()?.toList()?.contains("labels") ?: false
+        val colums = LinkedList<Column>()
+        dataset?.let {
+            colums.add(dataset.col("category"))
+            if (isIndex){
+                colums.add(dataset.col("categoryIndex"))
+            }
+            colums.add(dataset.col("content"))
+            if (isTitle){
+                colums.add(dataset.col("title"))
+            }
+            if (isLabels){
+                colums.add(dataset.col("labels"))
+            }
+            dataset.col(inputColName)
         }
+
+        val columsSeq = scala.collection.JavaConversions.asScalaBuffer(colums)
+
+        val selectContent = dataset?.select(columsSeq)
+
         val beanEncoder = Encoders.bean(ParsedSentenceBean::class.java)
         val parsedContent = selectContent?.map({ text ->
 
-        //val parsedContent = selectContent?.javaRDD()?.map { text ->
+            //val parsedContent = selectContent?.javaRDD()?.map { text ->
             val content = text.getString(text.fieldIndex(inputColName))
             val doc = Annotation(content)
             wrapper.get()?.annotate(doc)
@@ -130,47 +144,41 @@ public class CoreNLP : Transformer {
                 }
             }
 
+            val index = if (isIndex) {
+                text.getDouble(1)
+            } else {
+                0.0
+            }
+            val title = if (isTitle) {
+                text.getString(text.fieldIndex("title"))
+            } else {
+                ""
+            }
+
+            val labels = if (isLabels){
+                text.getList<String>(text.fieldIndex("labels"))
+            } else {
+                listOf()
+            }
 
             val res = if (!annotations.contains("parse") && !annotations.contains("ner")) {
                 outputCol = "lemmas"
-                val index = if (isIndex) {
-                    text.getDouble(1)
-                } else {
-                    0.0
-                }
-                ParsedSentenceBean(text.getString(0), index, content, tokens, poses, lemmas, ArrayList<String>(), ArrayList<String>())
-//                res = RowFactory.create(text.getLong(0), tokens, poses, lemmas)
+                ParsedSentenceBean(text.getString(0), index, content, title,labels,tokens.joinToString(" "), poses.joinToString(" "),
+                        lemmas.joinToString(" "), "", "")
             } else if (annotations.contains("parse") && !annotations.contains("ner")) {
                 outputCol = "parses"
-                //               res = RowFactory.create(text.getLong(0), tokens, poses, lemmas, parses)
-                val index = if (isIndex) {
-                    text.getDouble(1)
-                } else {
-                    0.0
-                }
-                ParsedSentenceBean(text.getString(0), index, content, tokens, poses, lemmas, parses, ArrayList<String>())
+                ParsedSentenceBean(text.getString(0), index, content, title, labels,tokens.joinToString(" "), poses.joinToString(" "),
+                        lemmas.joinToString(" "), parses.joinToString(" "), "")
             } else if (annotations.contains("parse") && annotations.contains("ner")) {
                 outputCol = "ners"
-//                res = RowFactory.create(text.getLong(0), tokens, poses, lemmas, parses, ners)
-                val index = if (isIndex) {
-                    text.getDouble(1)
-                } else {
-                    0.0
-                }
-                ParsedSentenceBean(text.getString(0), index, content, tokens, poses, lemmas, parses, ners)
+                ParsedSentenceBean(text.getString(0), index, content, title,labels,tokens.joinToString(" "), poses.joinToString(" "),
+                        lemmas.joinToString(" "), parses.joinToString(" "), ners.joinToString(" "))
             } else {
-                val index = if (isIndex) {
-                    text.getDouble(1)
-                } else {
-                    0.0
-                }
-                ParsedSentenceBean(text.getString(0), index, content, tokens, ArrayList<String>(), ArrayList<String>(), ArrayList<String>(), ArrayList<String>())
+                ParsedSentenceBean(text.getString(0), index, content, title,labels,tokens.joinToString(" "), "", "", "", "")
             }
             res
         }, beanEncoder)
-        //val encoder = Encoders.bean(ParsedSentenceBean::class.java)
-        //return sparkSession.createDataFrame(parsedContent, ParsedSentenceBean::class.java)
-        parsedContent?.show(3)
+
         return parsedContent?.toDF()
     }
 
