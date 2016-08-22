@@ -34,7 +34,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 
 dependencies {
-
+    //compile relativeProject(":collokia-common-util")
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}:models"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -49,8 +49,6 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:$version_jackson"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$version_jackson_kotlin"
     compile "com.fasterxml.jackson.module:jackson-module-scala_2.10:$version_jackson_scala"
-
-
 
 }
 
