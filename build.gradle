@@ -34,7 +34,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 
 dependencies {
-    //compile relativeProject(":collokia-common-util")
+    compile "com.collokia:collokia-common-util:1.0-SNAPSHOT"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}:models"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -82,11 +82,6 @@ repositories {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.8'
-}
-
-repositories {
-    mavenCentral()
-    jcenter()
 }
 
 sourceSets {
