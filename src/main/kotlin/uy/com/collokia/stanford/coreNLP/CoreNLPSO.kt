@@ -15,7 +15,7 @@ import java.util.*
 
 
 public data class ParsedSoPage(var parsedContent: String, var title: String, var codes: List<String>,
-                               var imports: List<String>, var tags : List<String>) : Serializable
+                               var imports: List<String>, var tags : List<String>, var category : String) : Serializable
 
 
 public class CoreNLPSO : Transformer {
@@ -48,6 +48,7 @@ public class CoreNLPSO : Transformer {
         var res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
 
         res = res?.add(DataTypes.createStructField("title", DataTypes.StringType, false))
+        res = res?.add(DataTypes.createStructField("category", DataTypes.StringType, false))
 
         res = res?.add(DataTypes.createStructField("imports", DataTypes.createArrayType(DataTypes.StringType), false))
         res = res?.add(DataTypes.createStructField("codes", DataTypes.createArrayType(DataTypes.StringType), false))
@@ -59,7 +60,7 @@ public class CoreNLPSO : Transformer {
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
         return dataset?.let {
-            val colums = listOf(dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"), dataset.col(inputColName))
+            val colums = listOf(dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"), dataset.col("category"), dataset.col(inputColName))
             val columsSeq = scala.collection.JavaConversions.asScalaBuffer(colums)
             val selectContent = dataset.select(columsSeq)
             val beanEncoder = Encoders.bean(ParsedSoPage::class.java)
@@ -105,7 +106,8 @@ public class CoreNLPSO : Transformer {
                 val codes = text.getList<String>(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
                 val tags = text.getList<String>(text.fieldIndex("tags"))
-                ParsedSoPage(lemmas.joinToString(" "), title, codes, imports,tags)
+                val category = text.getString(text.fieldIndex("category"))
+                ParsedSoPage(lemmas.joinToString(" "), title, codes, imports,tags,category)
 
             }, beanEncoder)
 

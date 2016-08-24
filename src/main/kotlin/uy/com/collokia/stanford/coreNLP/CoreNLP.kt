@@ -73,7 +73,7 @@ public class CoreNLP : Transformer {
             if (isIndex) {
                 colums.add(dataset.col("categoryIndex"))
             }
-            colums.add(dataset.col("content"))
+            //colums.add(dataset.col("content"))
             if (isTitle) {
                 colums.add(dataset.col("title"))
             }
