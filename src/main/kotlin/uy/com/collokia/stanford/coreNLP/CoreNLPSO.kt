@@ -14,7 +14,7 @@ import java.io.Serializable
 import java.util.*
 
 
-public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: List<String>,
+public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
                                var imports: List<String>, var tags: List<String>, var category: String) : Serializable
 
 
@@ -45,12 +45,12 @@ public class CoreNLPSO : Transformer {
 
     override fun transformSchema(p0: StructType?): StructType? {
 
-        var res = p0?.add(DataTypes.createStructField("id", DataTypes.StringType, false))
-        res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
+        var res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
+        res = res?.add(DataTypes.createStructField("id", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("title", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("category", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("imports", DataTypes.createArrayType(DataTypes.StringType), false))
-        res = res?.add(DataTypes.createStructField("codes", DataTypes.createArrayType(DataTypes.StringType), false))
+        res = res?.add(DataTypes.createStructField("codes", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("tags", DataTypes.createArrayType(DataTypes.StringType), false))
 
         return res
@@ -101,7 +101,7 @@ public class CoreNLPSO : Transformer {
                 }
                 val id = text.getString(text.fieldIndex("id"))
                 val title = text.getString(text.fieldIndex("title"))
-                val codes = text.getList<String>(text.fieldIndex("codes"))
+                val codes = text.getString(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
                 val tags = text.getList<String>(text.fieldIndex("tags"))
                 val category = text.getString(text.fieldIndex("category"))
