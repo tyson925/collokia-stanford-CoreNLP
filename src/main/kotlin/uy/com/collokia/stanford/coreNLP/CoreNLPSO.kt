@@ -14,8 +14,8 @@ import java.io.Serializable
 import java.util.*
 
 
-public data class ParsedSoPage(var parsedContent: String, var title: String, var codes: List<String>,
-                               var imports: List<String>, var tags : List<String>, var category : String) : Serializable
+public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: List<String>,
+                               var imports: List<String>, var tags: List<String>, var category: String) : Serializable
 
 
 public class CoreNLPSO : Transformer {
@@ -44,12 +44,11 @@ public class CoreNLPSO : Transformer {
     }
 
     override fun transformSchema(p0: StructType?): StructType? {
-        //throw UnsupportedOperationException()
-        var res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
 
+        var res = p0?.add(DataTypes.createStructField("id", DataTypes.StringType, false))
+        res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("title", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("category", DataTypes.StringType, false))
-
         res = res?.add(DataTypes.createStructField("imports", DataTypes.createArrayType(DataTypes.StringType), false))
         res = res?.add(DataTypes.createStructField("codes", DataTypes.createArrayType(DataTypes.StringType), false))
         res = res?.add(DataTypes.createStructField("tags", DataTypes.createArrayType(DataTypes.StringType), false))
@@ -60,7 +59,8 @@ public class CoreNLPSO : Transformer {
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
         return dataset?.let {
-            val colums = listOf(dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"), dataset.col("category"), dataset.col(inputColName))
+            val colums = listOf(dataset.col("id"), dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"),
+                    dataset.col("category"), dataset.col(inputColName))
             val columsSeq = scala.collection.JavaConversions.asScalaBuffer(colums)
             val selectContent = dataset.select(columsSeq)
             val beanEncoder = Encoders.bean(ParsedSoPage::class.java)
@@ -80,8 +80,6 @@ public class CoreNLPSO : Transformer {
 
                 for ((sentenceIndex, sentence) in sentences.withIndex()) {
                     val documentTokensList = sentence.get(CoreAnnotations.TokensAnnotation::class.java)
-                    //println(sentence)
-
 
                     val tokenArray = documentTokensList.map { token ->
                         token.get(CoreAnnotations.TextAnnotation::class.java)
@@ -101,13 +99,13 @@ public class CoreNLPSO : Transformer {
                     lemmas.addAll(lemmaArray)
 
                 }
-
+                val id = text.getString(text.fieldIndex("id"))
                 val title = text.getString(text.fieldIndex("title"))
                 val codes = text.getList<String>(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
                 val tags = text.getList<String>(text.fieldIndex("tags"))
                 val category = text.getString(text.fieldIndex("category"))
-                ParsedSoPage(lemmas.joinToString(" "), title, codes, imports,tags,category)
+                ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports, tags, category)
 
             }, beanEncoder)
 
