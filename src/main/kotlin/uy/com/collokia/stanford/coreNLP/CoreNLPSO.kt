@@ -14,8 +14,11 @@ import java.io.Serializable
 import java.util.*
 
 
+//public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
+//                               var imports: List<String>, var tags: List<String>, var category: String) : Serializable
+
 public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
-                               var imports: List<String>, var tags: List<String>, var category: String) : Serializable
+                                       var imports: String, var tags: String, var category: String) : Serializable
 
 
 public class CoreNLPSO : Transformer {
@@ -103,9 +106,9 @@ public class CoreNLPSO : Transformer {
                 val title = text.getString(text.fieldIndex("title"))
                 val codes = text.getString(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
-                val tags = text.getList<String>(text.fieldIndex("tags"))
+                val tags = text.getList<String>(text.fieldIndex("tags")).map { tag -> tag.replace(" ","_") }
                 val category = text.getString(text.fieldIndex("category"))
-                ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports, tags, category)
+                ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports.joinToString("\n"), tags.joinToString(" "), category)
 
             }, beanEncoder)
 
