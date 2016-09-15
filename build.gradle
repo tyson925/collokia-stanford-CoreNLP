@@ -38,17 +38,17 @@ dependencies {
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}:models"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "org.apache.spark:spark-mllib_2.10:${version_Spark}"
-    compile "org.apache.spark:spark-sql_2.10:${version_Spark}"
-    compile "org.apache.spark:spark-core_2.10:${version_Spark}"
-    compile "org.apache.spark:spark-streaming_2.10:${version_Spark}"
+    compile "org.apache.spark:spark-mllib_${scalaVersion}:${version_Spark}"
+    compile "org.apache.spark:spark-sql_${scalaVersion}:${version_Spark}"
+    compile "org.apache.spark:spark-core_${scalaVersion}:${version_Spark}"
+    compile "org.apache.spark:spark-streaming_${scalaVersion}:${version_Spark}"
 
     compile "joda-time:joda-time:$version_jodatime"
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$version_jackson"
     compile "com.fasterxml.jackson.core:jackson-core:$version_jackson"
     compile "com.fasterxml.jackson.core:jackson-databind:$version_jackson"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$version_jackson_kotlin"
-    compile "com.fasterxml.jackson.module:jackson-module-scala_2.10:$version_jackson_scala"
+    compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
 
 }
 
