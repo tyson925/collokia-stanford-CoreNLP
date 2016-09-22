@@ -1,3 +1,5 @@
+@file:Suppress("RemoveForLoopIndices")
+
 package uy.com.collokia.stanford.coreNLP
 
 import edu.stanford.nlp.ling.CoreAnnotations
@@ -12,22 +14,23 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import java.io.Serializable
 import java.util.*
+import kotlin.properties.Delegates
 
 
 //public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
 //                               var imports: List<String>, var tags: List<String>, var category: String) : Serializable
 
-public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
-                                       var imports: String, var tags: String, var category: String) : Serializable
+data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
+                        var imports: String, var tags: String, var category: String) : Serializable
 
 
-public class CoreNLPSO : Transformer {
+class CoreNLPSO : Transformer {
 
     var wrapper: StanfordCoreNLPWrapper
     var sparkSession: SparkSession
     var annotations: String
-    //var inputColName: String by Delegates.notNull<String>()
-    var inputColName: String? = null
+    var inputColName: String by Delegates.notNull<String>()
+    //var inputColName: String? = null
     var outputCol: String? = "lemmas"
 
     constructor(sparkSession: SparkSession, annotations: String) {
@@ -39,6 +42,7 @@ public class CoreNLPSO : Transformer {
         //tokenize,
         props.setProperty("annotators", "tokenize, ssplit, ${annotations}")
         wrapper = StanfordCoreNLPWrapper(props)
+        inputColName = "content"
     }
 
 
@@ -106,7 +110,7 @@ public class CoreNLPSO : Transformer {
                 val title = text.getString(text.fieldIndex("title"))
                 val codes = text.getString(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
-                val tags = text.getList<String>(text.fieldIndex("tags")).map { tag -> tag.replace(" ","_") }
+                val tags = text.getList<String>(text.fieldIndex("tags")).map { tag -> tag.replace(" ", "_") }
                 val category = text.getString(text.fieldIndex("category"))
                 ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports.joinToString("\n"), tags.joinToString(" "), category)
 
@@ -121,7 +125,7 @@ public class CoreNLPSO : Transformer {
         return UUID.randomUUID().toString()
     }
 
-    public fun setInputCol(inputCol: String): CoreNLPSO {
+    fun setInputCol(inputCol: String): CoreNLPSO {
         inputColName = inputCol
         return this
     }
