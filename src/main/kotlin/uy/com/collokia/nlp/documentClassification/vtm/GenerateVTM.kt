@@ -153,8 +153,8 @@ fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pip
     return pipeline
 }
 
-fun constructTagVtmDataPipeline(vocabSize: Int): Pipeline {
-    val tagTokenizer = RegexTokenizer().setInputCol(SimpleDocument::labels.name).setOutputCol(tagTokenizerOutputCol)
+fun constructTagVtmDataPipeline(vocabSize: Int, inputColName : String = SimpleDocument::labels.name): Pipeline {
+    val tagTokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tagTokenizerOutputCol)
             .setMinTokenLength(2)
             .setToLowercase(true)
             .setPattern("\\w+")
