@@ -1,6 +1,6 @@
 @file:Suppress("RemoveForLoopIndices")
 
-package uy.com.collokia.stanford.coreNLP
+package uy.com.collokia.nlp.stanford.coreNLP
 
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.pipeline.Annotation
@@ -12,6 +12,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
+import scala.collection.JavaConversions
 import java.io.Serializable
 import java.util.*
 import kotlin.properties.Delegates
@@ -50,9 +51,9 @@ class CoreNLPSO : Transformer {
         return CoreNLPSO(sparkSession, annotations)
     }
 
-    override fun transformSchema(p0: StructType?): StructType? {
+    override fun transformSchema(schema: StructType?): StructType? {
 
-        var res = p0?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
+        var res = schema?.add(DataTypes.createStructField("parsedContent", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("id", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("title", DataTypes.StringType, false))
         res = res?.add(DataTypes.createStructField("category", DataTypes.StringType, false))
@@ -68,7 +69,7 @@ class CoreNLPSO : Transformer {
         return dataset?.let {
             val colums = listOf(dataset.col("id"), dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"),
                     dataset.col("category"), dataset.col(inputColName))
-            val columsSeq = scala.collection.JavaConversions.asScalaBuffer(colums)
+            val columsSeq = JavaConversions.asScalaBuffer(colums)
             val selectContent = dataset.select(columsSeq)
             val beanEncoder = Encoders.bean(ParsedSoPage::class.java)
 

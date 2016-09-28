@@ -1,4 +1,4 @@
-package uy.com.collokia.stanford.coreNLP
+package uy.com.collokia.nlp.stanford.coreNLP
 
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.pipeline.Annotation
@@ -8,15 +8,16 @@ import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.sql.*
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
+import scala.collection.JavaConversions
 import java.io.Serializable
 import java.util.*
 
-public data class ParsedSentenceBean(var category: String, var categoryIndex: Double, var content: String, var title: String,
+data class ParsedSentenceBean(var category: String, var categoryIndex: Double, var content: String, var title: String,
                                      var labels: List<String>, var tokens: String, var poses: String, var lemmas: String,
                                      var parses: String, var ners: String) : Serializable
 
 
-public class CoreNLP : Transformer {
+class CoreNLP : Transformer {
 
     var wrapper: StanfordCoreNLPWrapper
     var sparkSession: SparkSession
@@ -40,9 +41,9 @@ public class CoreNLP : Transformer {
         return CoreNLP(sparkSession, annotations)
     }
 
-    override fun transformSchema(p0: StructType?): StructType? {
+    override fun transformSchema(schema: StructType?): StructType? {
         //throw UnsupportedOperationException()
-        var res = p0?.add(DataTypes.createStructField("tokens", DataTypes.StringType, false))
+        var res = schema?.add(DataTypes.createStructField("tokens", DataTypes.StringType, false))
         if (annotations.contains("pos")) {
             res = res?.add(DataTypes.createStructField("poses", DataTypes.StringType, false))
         }
@@ -82,7 +83,7 @@ public class CoreNLP : Transformer {
             }
             dataset.col(inputColName)
 
-            val columsSeq = scala.collection.JavaConversions.asScalaBuffer(colums)
+            val columsSeq = JavaConversions.asScalaBuffer(colums)
 
             val selectContent = dataset.select(columsSeq)
 
@@ -188,7 +189,7 @@ public class CoreNLP : Transformer {
         return UUID.randomUUID().toString()
     }
 
-    public fun setInputCol(inputCol: String): CoreNLP {
+    fun setInputCol(inputCol: String): CoreNLP {
         inputColName = inputCol
         return this
     }

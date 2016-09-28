@@ -1,4 +1,4 @@
-package uy.com.collokia.stanford.coreNLP
+package uy.com.collokia.nlp.stanford.coreNLP
 
 
 import java.io.Serializable
