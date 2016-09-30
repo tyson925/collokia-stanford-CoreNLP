@@ -25,13 +25,12 @@ data class ParsedSoPage(var id: String, var parsedContent: String, var title: St
                         var imports: String, var tags: String, var category: String) : Serializable
 
 
-class CoreNLPSO : Transformer {
+class CoreNLPSO : Transformer, Serializable {
 
     var wrapper: StanfordCoreNLPWrapper
     var sparkSession: SparkSession
     var annotations: String
-    var inputColName: String by Delegates.notNull<String>()
-    //var inputColName: String? = null
+    var inputColName: String? = null
     var outputCol: String? = "lemmas"
 
     constructor(sparkSession: SparkSession, annotations: String) {
@@ -111,9 +110,10 @@ class CoreNLPSO : Transformer {
                 val title = text.getString(text.fieldIndex("title"))
                 val codes = text.getString(text.fieldIndex("codes"))
                 val imports = text.getList<String>(text.fieldIndex("imports"))
-                val tags = text.getList<String>(text.fieldIndex("tags")).map { tag -> tag.replace(" ", "_") }
+                //val tags = text.getList<String>(text.fieldIndex("tags")).map { tag -> tag.replace(" ", "_") }
+                val tags = text.getString(text.fieldIndex("tags"))
                 val category = text.getString(text.fieldIndex("category"))
-                ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports.joinToString("\n"), tags.joinToString(" "), category)
+                ParsedSoPage(id, lemmas.joinToString(" "), title, codes, imports.joinToString("\n"), tags, category)
 
             }, beanEncoder)
 
