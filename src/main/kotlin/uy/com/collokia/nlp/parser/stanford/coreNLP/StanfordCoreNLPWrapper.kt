@@ -1,11 +1,11 @@
-package uy.com.collokia.nlp.stanford.coreNLP
+package uy.com.collokia.nlp.parser.stanford.coreNLP
 
 
 import java.io.Serializable
 import java.util.*
 import edu.stanford.nlp.pipeline.StanfordCoreNLP
 
-public class StanfordCoreNLPWrapper(private val props: Properties) : Serializable {
+class StanfordCoreNLPWrapper(private val props: Properties) : Serializable {
 
     @Transient private var coreNLP: StanfordCoreNLP? = null
 

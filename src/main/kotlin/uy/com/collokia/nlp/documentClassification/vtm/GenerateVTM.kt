@@ -66,10 +66,10 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<SimpleDocument>): Dataset<R
     return filteredWordsDataFrame
 }
 
-fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int): Pipeline {
+fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName: String = SimpleDocument::content.name): Pipeline {
     val indexer = StringIndexer().setInputCol(SimpleDocument::category.name).setOutputCol(labelIndexCol)
 
-    val tokenizer = RegexTokenizer().setInputCol(SimpleDocument::content.name).setOutputCol(tokenizerOutputCol)
+    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
             .setMinTokenLength(3)
             .setToLowercase(false)
             .setPattern("\\w+")

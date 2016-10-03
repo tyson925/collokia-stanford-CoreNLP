@@ -1,6 +1,6 @@
 @file:Suppress("RemoveForLoopIndices")
 
-package uy.com.collokia.nlp.stanford.coreNLP
+package uy.com.collokia.nlp.parser.stanford.coreNLP
 
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.pipeline.Annotation
