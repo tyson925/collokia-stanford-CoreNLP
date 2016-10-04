@@ -4,6 +4,8 @@ package uy.com.collokia.nlp.documentClassification
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.classification.OneVsRest
 import org.apache.spark.ml.classification.OneVsRestModel
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.*
@@ -16,10 +18,12 @@ import org.apache.spark.sql.SparkSession
 import scala.Tuple2
 import uy.com.collokia.common.utils.deleteIfExists
 import uy.com.collokia.common.utils.machineLearning.EvaluationMetrics
+import uy.com.collokia.common.utils.machineLearning.LogisticRegressionProperties
 import uy.com.collokia.common.utils.machineLearning.printMatrix
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
 import java.text.DecimalFormat
+import uy.com.collokia.common.utils.machineLearning.printMultiClassMetrics
 
 val OVR_MODEL = "./data/model/ovrDectisonTree"
 val LABELS = "./data/model/labelIndexer"
@@ -54,7 +58,7 @@ fun generateVTM(corpus: Dataset<Row>,
                 isRunLocal: Boolean,
                 tagInputColName: String = SimpleDocument::labels.name): Dataset<Row> {
 
-    val vtmDataPipeline = constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE,"lemmatizedContent")
+    val vtmDataPipeline = constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE, "lemmatizedContent")
 
     println(corpus.count())
 
@@ -118,10 +122,66 @@ fun generateVTM(corpus: Dataset<Row>,
 
     }
 
-
     return dataset
 
 }
+
+fun evaluateOneVsRestLogReg(dataset: Dataset<Row>): LogisticRegressionProperties {
+    val (train, test) = dataset.randomSplit(doubleArrayOf(0.9, 0.1))
+    val indexer = StringIndexerModel.load(LABELS)
+
+    val cachedTrain = train.cache()
+    val cachedTest = test.cache()
+
+    val evaluations =
+            //listOf(100, 200, 300, 600).flatMap { numIterations ->
+            listOf(600).flatMap { numIterations ->
+                //listOf(1E-5, 1E-6, 1E-7).flatMap { stepSize ->
+                listOf(1E-5).flatMap { stepSize ->
+                    listOf(0.01).flatMap { regressionParam ->
+                        listOf(0.01, 0.1, 0.3, 0.5, 0.8, 1.0).flatMap { elasticNetParam ->
+                            //listOf(true, false).flatMap { fitIntercept ->
+                            listOf(true).flatMap { fitIntercept ->
+                                listOf(true).map { standardization ->
+
+
+                                    val oneVsRest = constructLogRegClassifier(numIterations, stepSize, fitIntercept, standardization,
+                                            regressionParam, elasticNetParam)
+                                    val ovrModel = oneVsRest.fit(cachedTrain)
+                                    val metrics = evaluateModel(ovrModel, cachedTest, indexer)
+
+                                    val properties = LogisticRegressionProperties(numIterations, stepSize, fitIntercept, standardization,
+                                            regressionParam, elasticNetParam)
+                                    println("${metrics.weightedFMeasure()}\t$properties")
+                                    Tuple2(properties, metrics)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+    val sortedEvaluations = evaluations.sortedBy({ metricsData -> metricsData._2.fMeasure(1.0) }).reversed().map { metricsData ->
+        Tuple2(metricsData._1, printMultiClassMetrics(metricsData._2))
+    }
+
+    println(sortedEvaluations.joinToString("\n"))
+
+    val bestLogRegProperties = sortedEvaluations.first()._1
+
+    val oneVsRest = constructLogRegClassifier(bestLogRegProperties.numIterations,
+            bestLogRegProperties.stepSize,
+            bestLogRegProperties.fitIntercept,
+            bestLogRegProperties.standardization,
+            bestLogRegProperties.regParam)
+
+    val ovrModel = oneVsRest.fit(cachedTrain)
+
+    evaluateModelConfusionMTX(ovrModel, cachedTest)
+
+    return bestLogRegProperties
+}
+
 
 fun evaluateModelConfusionMTX(ovrModel: OneVsRestModel, test: Dataset<Row>) {
     val indexer = StringIndexerModel.load(LABELS)
@@ -205,4 +265,29 @@ fun evaluateModel10Fold(pipeline: Pipeline, corpus: Dataset<Row>) {
     }.sortedByDescending { stat -> stat._2 }
 
     println(paramsToScore.joinToString("\n"))
+}
+
+fun constructLogRegClassifier(numIterations: Int,
+                              stepSize: Double,
+                              fitIntercept: Boolean,
+                              standardization: Boolean,
+                              regParam: Double,
+                              elasticNetParam: Double = 0.0): OneVsRest {
+
+    val logisticRegression = LogisticRegression()
+            .setMaxIter(numIterations)
+            .setTol(stepSize)
+            .setFitIntercept(fitIntercept)
+            .setStandardization(standardization)
+            .setRegParam(regParam)
+
+    if (elasticNetParam != 0.0) {
+        logisticRegression.elasticNetParam = elasticNetParam
+    }
+
+    val oneVsRest = OneVsRest().setClassifier(logisticRegression)
+            .setFeaturesCol(featureCol)
+            .setLabelCol(labelIndexCol)
+
+    return oneVsRest
 }
