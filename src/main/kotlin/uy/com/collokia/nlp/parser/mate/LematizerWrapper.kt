@@ -10,12 +10,14 @@ class LematizerWrapper(private val props : Array<String>) : Serializable {
 
     @Transient private var lemmatizer: Lemmatizer? = null
 
-    fun get() : Lemmatizer? {
+    fun get() : Lemmatizer {
 
-        if (lemmatizer == null) {
+        return if (lemmatizer == null) {
             val optsLemmatizer = Options(props)
             lemmatizer = Lemmatizer(optsLemmatizer)
+            lemmatizer!!
+        } else {
+            lemmatizer!!
         }
-        return lemmatizer
     }
 }
