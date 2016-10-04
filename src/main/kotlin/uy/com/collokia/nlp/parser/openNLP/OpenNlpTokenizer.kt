@@ -29,6 +29,16 @@ class OpenNlpTokenizer  : Transformer {
         this.sparkSession = sparkSession
         this.inputColName = "content"
         this.outputColName = tokenizedContent
+
+        val tokenizer = UDF1{ content : String ->
+            val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
+                tokenizerWrapper.get().tokenize(sentence).toList()
+            }
+            tokenizedText
+        }
+
+        sparkSession.udf().register("tokenizer",tokenizer,DataTypes.createArrayType(DataTypes.StringType))
+
     }
 
     fun setInputColName(inputColName : String) : OpenNlpTokenizer {
@@ -45,22 +55,10 @@ class OpenNlpTokenizer  : Transformer {
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
+        //dataset?.show(10,false)
 
-        val tokenizer = UDF1{ content : String ->
-            val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
-                tokenizerWrapper.get().tokenize(sentence).toList()
-            }
-            tokenizedText
-        }
-
-        sparkSession.udf().register("tokenizer",tokenizer,DataTypes.createArrayType(DataTypes.StringType))
-
-        //val tokens = functions.udf(tokenizer,DataTypes.createArrayType(DataTypes.StringType))
-
-        dataset?.show(10,false)
-
-        return dataset?.select(dataset.col("*"),functions.callUDF("tokenizer",JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName))))
-                .`as`(outputColName))
+        return dataset?.select(dataset.col("*"),
+                functions.callUDF("tokenizer",JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
 
     }
 

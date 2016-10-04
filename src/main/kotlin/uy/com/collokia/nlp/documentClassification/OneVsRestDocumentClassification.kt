@@ -54,7 +54,7 @@ fun generateVTM(corpus: Dataset<Row>,
                 isRunLocal: Boolean,
                 tagInputColName: String = SimpleDocument::labels.name): Dataset<Row> {
 
-    val vtmDataPipeline = constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE,"parsedContent")
+    val vtmDataPipeline = constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE,"lemmatizedContent")
 
     println(corpus.count())
 

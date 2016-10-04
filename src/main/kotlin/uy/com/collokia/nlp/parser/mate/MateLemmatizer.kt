@@ -36,24 +36,6 @@ class MateLemmatizer : Transformer {
 
         this.inputColName = tokenizedContent
         this.outputColName = lemmatizedContent
-    }
-
-    fun setInputColName(inputColName: String): MateLemmatizer {
-        this.inputColName = inputColName
-        return this
-    }
-
-    override fun uid(): String {
-        return "lemmatizer111111"
-    }
-
-    override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(sparkSession,isRaw)
-    }
-
-    override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
-
-        val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
 
         val lemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
 
@@ -81,6 +63,26 @@ class MateLemmatizer : Transformer {
         } else {
             sparkSession.udf().register("lemmatizer", lemmatizer, DataTypes.createArrayType(DataTypes.StringType))
         }
+
+    }
+
+    fun setInputColName(inputColName: String): MateLemmatizer {
+        this.inputColName = inputColName
+        return this
+    }
+
+    override fun uid(): String {
+        return "lemmatizer111111"
+    }
+
+    override fun copy(p0: ParamMap?): Transformer {
+        return MateLemmatizer(sparkSession,isRaw)
+    }
+
+    override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
+
+        val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
+
 
 
         return dataset?.select(dataset.col("*"),
