@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import java.io.Serializable
 
-data class TokenizedContent(var content : String, var tokenizedContent : List<String>) : Serializable
+val tokenizedContent = "tokenizedContent"
 
 class OpenNlpTokenizer  : Transformer {
 
@@ -28,7 +28,7 @@ class OpenNlpTokenizer  : Transformer {
         tokenizerWrapper = OpenNlpTokenizerWrapper(tokenizerModelName)
         this.sparkSession = sparkSession
         this.inputColName = "content"
-        this.outputColName = TokenizedContent::tokenizedContent.name
+        this.outputColName = tokenizedContent
     }
 
     fun setInputColName(inputColName : String) : OpenNlpTokenizer {
