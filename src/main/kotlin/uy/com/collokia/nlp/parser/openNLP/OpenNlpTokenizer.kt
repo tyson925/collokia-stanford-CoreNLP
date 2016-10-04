@@ -3,12 +3,11 @@ package uy.com.collokia.nlp.parser.openNLP
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.SchemaUtils
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Encoders
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.*
+import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
+import scala.collection.JavaConversions
 import java.io.Serializable
 
 data class TokenizedContent(var content : String, var tokenizedContent : List<String>) : Serializable
@@ -47,17 +46,21 @@ class OpenNlpTokenizer  : Transformer {
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
-        return dataset?.let{
-            val selectContent = dataset.select("content")
-            val beanEncoder = Encoders.bean(TokenizedContent::class.java)
-            selectContent.map({row ->
-                val text = row.getString(0)
-                val tokenizedText = sdetectorWrapper.get().sentDetect(text).flatMap { sentence ->
-                    tokenizerWrapper.get().tokenize(sentence).toList()
-                }
-                TokenizedContent(text,tokenizedText)
-            },beanEncoder).toDF()
-        } ?: dataset?.toDF()
+        val tokenizer = UDF1{ content : String ->
+            val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
+                tokenizerWrapper.get().tokenize(sentence).toList()
+            }
+            tokenizedText
+        }
+
+        sparkSession.udf().register("tokenizer",tokenizer,DataTypes.createArrayType(DataTypes.StringType))
+
+        //val tokens = functions.udf(tokenizer,DataTypes.createArrayType(DataTypes.StringType))
+
+        dataset?.show(10,false)
+
+        return dataset?.select(dataset.col("*"),functions.callUDF("tokenizer",JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName))))
+                .`as`(outputColName))
 
     }
 
