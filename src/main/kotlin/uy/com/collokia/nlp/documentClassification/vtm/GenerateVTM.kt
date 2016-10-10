@@ -36,9 +36,9 @@ val titleOutputCol = "title_Features"
 val tagTokenizerOutputCol = "tag_words"
 val tagCvModelOutputCol = "tag_tfFeatures"
 val tagOutputCol = "tag_features"
-val CONTENT_VTM_VOC_SIZE = 2000
+val CONTENT_VTM_VOC_SIZE = 4000
 val TITLE_VTM_VOC_SIZE = 800
-val TAG_VTM_VOC_SIZE = 400
+val TAG_VTM_VOC_SIZE = 800
 
 data class SimpleDocument(var category: String, var content: String, var title: String, var labels: String) : Serializable
 

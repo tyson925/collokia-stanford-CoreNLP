@@ -4,9 +4,7 @@ package uy.com.collokia.nlp.documentClassification
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.classification.OneVsRest
-import org.apache.spark.ml.classification.OneVsRestModel
+import org.apache.spark.ml.classification.*
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.*
 import org.apache.spark.ml.tuning.CrossValidator
@@ -15,6 +13,7 @@ import org.apache.spark.mllib.evaluation.MulticlassMetrics
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions
 import scala.Tuple2
 import uy.com.collokia.common.utils.deleteIfExists
 import uy.com.collokia.common.utils.machineLearning.EvaluationMetrics
@@ -26,7 +25,7 @@ import java.text.DecimalFormat
 import uy.com.collokia.common.utils.machineLearning.printMultiClassMetrics
 
 val OVR_MODEL = "./data/model/ovrDectisonTree"
-val LABELS = "./data/model/labelIndexer"
+val LABELS = "./data/model/labelIndexer_2"
 val REUTERS_DATA = "./data/reuters/json/reuters.json"
 val VTM_PIPELINE = "./data/model/vtmPipeLine"
 
@@ -77,7 +76,7 @@ fun generateVTM(corpus: Dataset<Row>,
     }
 
     val parsedCorpus = vtmPipelineModel.transform(corpus).drop(
-            SimpleDocument::content.name,
+            "lemmatizedContent",
             tokenizerOutputCol,
             removeOutputCol,
             ngramOutputCol,
@@ -93,7 +92,7 @@ fun generateVTM(corpus: Dataset<Row>,
             titleNgramsOutputCol,
             titleCvModelOutputCol)
 
-    parsedCorpusTitle.show(10, false)
+    //parsedCorpusTitle.show(10, false)
 
     val vtmTagPipeline = constructTagVtmDataPipeline(TAG_VTM_VOC_SIZE, tagInputColName)
 
@@ -107,7 +106,6 @@ fun generateVTM(corpus: Dataset<Row>,
 
     val tagNormalizer = vtmTagPipelineModel.stages().last() as StandardScalerModel
 
-    //VectorAssembler().
     val assembler = VectorAssembler().setInputCols(arrayOf(contentScaler.outputCol, titleNormalizer.outputCol, tagNormalizer.outputCol))
             .setOutputCol(featureCol)
 
@@ -135,15 +133,17 @@ fun evaluateOneVsRestLogReg(dataset: Dataset<Row>): LogisticRegressionProperties
 
     val evaluations =
             //listOf(100, 200, 300, 600).flatMap { numIterations ->
-            listOf(600).flatMap { numIterations ->
+            listOf(200).flatMap { numIterations ->
+            //listOf(600).flatMap { numIterations ->
                 //listOf(1E-5, 1E-6, 1E-7).flatMap { stepSize ->
-                listOf(1E-5).flatMap { stepSize ->
-                    listOf(0.01).flatMap { regressionParam ->
-                        listOf(0.01, 0.1, 0.3, 0.5, 0.8, 1.0).flatMap { elasticNetParam ->
+                listOf(1E-7).flatMap { stepSize ->
+                    //listOf(0.001,0.01,0.1,0.3,0.5,0.8,1.0).flatMap { regressionParam ->
+                    listOf(0.1).flatMap { regressionParam ->
+                        listOf(0.0,0.001,0.01, 0.1).flatMap { elasticNetParam ->
+                        //listOf(0.0).flatMap { elasticNetParam ->
                             //listOf(true, false).flatMap { fitIntercept ->
                             listOf(true).flatMap { fitIntercept ->
                                 listOf(true).map { standardization ->
-
 
                                     val oneVsRest = constructLogRegClassifier(numIterations, stepSize, fitIntercept, standardization,
                                             regressionParam, elasticNetParam)
@@ -180,6 +180,35 @@ fun evaluateOneVsRestLogReg(dataset: Dataset<Row>): LogisticRegressionProperties
     evaluateModelConfusionMTX(ovrModel, cachedTest)
 
     return bestLogRegProperties
+}
+
+fun evaluateLogRegModel(lrModel: LogisticRegressionModel): Tuple2<Double, Double> {
+    // Extract the summary from the returned LogisticRegressionModel instance trained in the earlier
+    val trainingSummary = lrModel.summary()
+
+    // Obtain the objective per iteration.
+    val objectiveHistory = trainingSummary.objectiveHistory()
+    objectiveHistory.forEach({ loss -> println(loss) })
+
+    val binarySummary = trainingSummary as BinaryLogisticRegressionSummary
+
+    // Obtain the receiver-operating characteristic as a dataframe and areaUnderROC.
+    val roc = binarySummary.roc()
+    //roc.show()
+    println("areaUnderROC:\t${binarySummary.areaUnderROC()}")
+
+    // Set the model threshold to maximize F-Measure
+    val fMeasure = binarySummary.fMeasureByThreshold()
+
+    //fMeasure.show(100, false)
+    val maxFMeasure = fMeasure.select(functions.max("F-Measure")).head().getDouble(0)
+    val bestThreshold = fMeasure.where(fMeasure.col("F-Measure").`$eq$eq$eq`(maxFMeasure)).select("threshold").head().getDouble(0)
+
+    lrModel.threshold = bestThreshold
+
+    println("Coefficients: ${lrModel.coefficients()} Intercept: ${lrModel.intercept()}")
+    println("maxFMeasure: ${fMeasure}\tthreshold: ${bestThreshold}")
+    return Tuple2(maxFMeasure, bestThreshold)
 }
 
 
@@ -285,6 +314,7 @@ fun constructLogRegClassifier(numIterations: Int,
         logisticRegression.elasticNetParam = elasticNetParam
     }
 
+    println("elasticNetParam\t${logisticRegression.elasticNetParam}")
     val oneVsRest = OneVsRest().setClassifier(logisticRegression)
             .setFeaturesCol(featureCol)
             .setLabelCol(labelIndexCol)

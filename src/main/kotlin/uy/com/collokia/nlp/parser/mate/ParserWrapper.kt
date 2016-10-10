@@ -19,5 +19,4 @@ class ParserWrapper(private val props : Array<String>) : Serializable {
             parser
         }
     }
-
 }

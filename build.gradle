@@ -3,7 +3,7 @@ version '1.0-SNAPSHOT'
 description 'collokia-spark machine learning examples'
 
 buildscript {
-    ext.kotlin_version = '1.0.3'
+    ext.kotlin_version = '1.0.4'
     repositories {
         maven {
             url "https://collokia.artifactoryonline.com/collokia/collokia-internal"
@@ -46,7 +46,7 @@ dependencies {
     compile 'edu.washington.cs.knowitall:opennlp-tokenize-models:1.5'
     compile 'org.apache.opennlp:opennlp-tools:1.5.3'
 
-    compile "com.collokia:collokia-common-util:1.0-SNAPSHOT"
+    compile "com.collokia:collokia-common-util:$util_version"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}"
     compile "edu.stanford.nlp:stanford-corenlp:${corenlpVersion}:models"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"

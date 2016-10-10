@@ -8,6 +8,10 @@ import org.apache.spark.sql.types.StructType
 
 class MateParser : Transformer {
 
+    constructor(){
+
+    }
+
     override fun uid(): String {
         throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -22,10 +26,5 @@ class MateParser : Transformer {
 
     override fun transformSchema(p0: StructType?): StructType {
         throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-
-    constructor(){
-
     }
 }
