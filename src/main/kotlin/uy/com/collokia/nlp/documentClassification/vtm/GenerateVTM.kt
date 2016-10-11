@@ -66,6 +66,32 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<SimpleDocument>): Dataset<R
     return filteredWordsDataFrame
 }
 
+fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
+    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
+            .setMinTokenLength(2)
+            .setToLowercase(false)
+            .setPattern("\\w+")
+            .setGaps(false)
+
+    val stopwordsApplied = if (stopwords.size == 0) {
+        println("Load default english stopwords...")
+        StopWordsRemover.loadDefaultStopWords("english")
+    } else {
+        println("Load stopwords...")
+        stopwords.toTypedArray()
+    }
+
+    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(removeOutputCol)
+            .setStopWords(stopwordsApplied)
+            .setCaseSensitive(false)
+
+    val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
+
+    val pipeline = Pipeline().setStages(arrayOf(tokenizer,remover, ngram))
+
+    return pipeline
+}
+
 fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName: String = SimpleDocument::content.name): Pipeline {
     val indexer = StringIndexer().setInputCol(SimpleDocument::category.name).setOutputCol(labelIndexCol)
 
