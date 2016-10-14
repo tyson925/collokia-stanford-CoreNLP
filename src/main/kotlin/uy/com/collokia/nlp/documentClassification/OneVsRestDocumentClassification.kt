@@ -136,9 +136,9 @@ fun evaluateOneVsRestLogReg(dataset: Dataset<Row>): LogisticRegressionProperties
             listOf(200).flatMap { numIterations ->
             //listOf(600).flatMap { numIterations ->
                 //listOf(1E-5, 1E-6, 1E-7).flatMap { stepSize ->
-                listOf(1E-7).flatMap { stepSize ->
-                    listOf(0.001,0.01,0.1,0.3,0.5,0.8,1.0).flatMap { regressionParam ->
-                    //listOf(0.1).flatMap { regressionParam ->
+                listOf(1E-7,1E-8,1E-9,1E-10).flatMap { stepSize ->
+                    //listOf(0.001,0.01,0.1,0.3,0.5,0.8,1.0).flatMap { regressionParam ->
+                    listOf(0.1).flatMap { regressionParam ->
                         //listOf(0.0,0.001,0.01, 0.1).flatMap { elasticNetParam ->
                         listOf(0.0).flatMap { elasticNetParam ->
                             //listOf(true, false).flatMap { fitIntercept ->
