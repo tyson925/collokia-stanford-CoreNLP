@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import java.io.Serializable
 
-val tokenizedContent = "tokenizedContent"
+const val tokenizedContent = "tokenizedContent"
 
 class OpenNlpTokenizer  : Transformer {
 
@@ -21,8 +21,8 @@ class OpenNlpTokenizer  : Transformer {
     var outputColName : String
 
     constructor(sparkSession: SparkSession,
-            sentenceDetectorModelName : String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin",
-            tokenizerModelName: String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"){
+            sentenceDetectorModelName : String = "./../../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin",
+            tokenizerModelName: String = "./../../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"){
 
         sdetectorWrapper = OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
         tokenizerWrapper = OpenNlpTokenizerWrapper(tokenizerModelName)

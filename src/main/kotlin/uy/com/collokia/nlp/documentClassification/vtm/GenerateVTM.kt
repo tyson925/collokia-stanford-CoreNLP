@@ -12,44 +12,25 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
+import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.nlp.transformer.OwnNGram
 import java.io.Serializable
 
 
 @Suppress("UNUSED_VARIABLE")
 
-val featureCol = "normIdfFeatures"
-val labelIndexCol = "categoryIndex"
-val predictionCol = "prediction"
+//data class SimpleDocument(var category: String, var content: String, var title: String, var labels: String) : Serializable
 
+fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
+                              categoryColName : String = "category",
+                              contentColName : String = "content"): Dataset<Row> {
 
-val tokenizerOutputCol = "words"
-val removeOutputCol = "filteredWords"
-val ngramOutputCol = "ngrams"
-val cvModelOutputCol = "tfFeatures"
-val contentOutputCol = "content_features"
-val titleTokenizerOutputCol = "title_words"
-val titleRemoverOutputCol = "filtered_titleWords"
-val titleNgramsOutputCol = "title_ngrams"
-val titleCvModelOutputCol = "tf_titleFeatures"
-val titleOutputCol = "title_Features"
-val tagTokenizerOutputCol = "tag_words"
-val tagCvModelOutputCol = "tag_tfFeatures"
-val tagOutputCol = "tag_features"
-val CONTENT_VTM_VOC_SIZE = 4000
-val TITLE_VTM_VOC_SIZE = 800
-val TAG_VTM_VOC_SIZE = 800
-
-data class SimpleDocument(var category: String, var content: String, var title: String, var labels: String) : Serializable
-
-fun extractFeaturesFromCorpus(textDataFrame: Dataset<SimpleDocument>): Dataset<Row> {
-
-    val indexer = StringIndexer().setInputCol(SimpleDocument::category.name).setOutputCol(labelIndexCol).fit(textDataFrame)
+    val indexer = StringIndexer().setInputCol(categoryColName).setOutputCol(labelIndexCol).fit(textDataFrame)
     println(indexer.labels().joinToString("\t"))
 
     val indexedTextDataFrame = indexer.transform(textDataFrame)
 
-    val tokenizer = Tokenizer().setInputCol(SimpleDocument::content.name).setOutputCol(tokenizerOutputCol)
+    val tokenizer = Tokenizer().setInputCol(contentColName).setOutputCol(tokenizerOutputCol)
     val wordsDataFrame = tokenizer.transform(indexedTextDataFrame)
 
     val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(featureCol)
@@ -73,7 +54,7 @@ fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
             .setPattern("\\w+")
             .setGaps(false)
 
-    val stopwordsApplied = if (stopwords.size == 0) {
+    val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
         StopWordsRemover.loadDefaultStopWords("english")
     } else {
@@ -92,8 +73,8 @@ fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
     return pipeline
 }
 
-fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName: String = SimpleDocument::content.name): Pipeline {
-    val indexer = StringIndexer().setInputCol(SimpleDocument::category.name).setOutputCol(labelIndexCol)
+fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName: String = "content"): Pipeline {
+    val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
 
     val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
             .setMinTokenLength(3)
@@ -101,7 +82,7 @@ fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName:
             .setPattern("\\w+")
             .setGaps(false)
 
-    val stopwordsApplied = if (stopwords.size == 0) {
+    val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
         StopWordsRemover.loadDefaultStopWords("english")
     } else {
@@ -137,7 +118,7 @@ fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName:
 
 fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pipeline {
 
-    val stopwordsApplied = if (stopwords.size == 0) {
+    val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
         StopWordsRemover.loadDefaultStopWords("english")
     } else {
@@ -145,7 +126,7 @@ fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pip
         stopwords
     }
 
-    val titleTokenizer = RegexTokenizer().setInputCol(SimpleDocument::title.name).setOutputCol(titleTokenizerOutputCol)
+    val titleTokenizer = RegexTokenizer().setInputCol("title").setOutputCol(titleTokenizerOutputCol)
             .setMinTokenLength(3)
             .setToLowercase(true)
             .setPattern("\\w+")
@@ -179,7 +160,7 @@ fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pip
     return pipeline
 }
 
-fun constructTagVtmDataPipeline(vocabSize: Int, inputColName : String = SimpleDocument::labels.name): Pipeline {
+fun constructTagVtmDataPipeline(vocabSize: Int, inputColName : String = "labels"): Pipeline {
     val tagTokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tagTokenizerOutputCol)
             .setMinTokenLength(2)
             .setToLowercase(true)

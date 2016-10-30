@@ -13,7 +13,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
-val lemmatizedContent = "lemmatizedContent"
+const val lemmatizedContentCol = "lemmatizedContentCol"
 
 class MateLemmatizer : Transformer {
 
@@ -26,7 +26,7 @@ class MateLemmatizer : Transformer {
 
     constructor(sparkSession: SparkSession,
                 isRaw : Boolean,
-                lemmatizerModel: String = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model") {
+                lemmatizerModel: String = "./../../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model") {
 
         this.sparkSession = sparkSession
         this.isRaw = isRaw
@@ -35,7 +35,7 @@ class MateLemmatizer : Transformer {
         lemmatizerWrapper = LematizerWrapper(options)
 
         this.inputColName = tokenizedContent
-        this.outputColName = lemmatizedContent
+        this.outputColName = lemmatizedContentCol
 
         val lemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
 
