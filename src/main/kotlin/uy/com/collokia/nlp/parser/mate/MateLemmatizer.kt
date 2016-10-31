@@ -13,7 +13,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
-const val lemmatizedContentCol = "lemmatizedContentCol"
+const val lemmatizedContentCol = "lemmatizedContent"
 
 class MateLemmatizer : Transformer {
 

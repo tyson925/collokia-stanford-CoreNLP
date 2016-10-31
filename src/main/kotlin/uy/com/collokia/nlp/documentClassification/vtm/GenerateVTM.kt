@@ -5,6 +5,8 @@ package uy.com.collokia.nlp.documentClassification.vtm
 //import org.apache.spark.mllib.regression.LabeledPoint
 //import org.apache.spark.ml.regression.LabeledPoint
 import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.*
 import org.apache.spark.ml.linalg.SparseVector
@@ -73,7 +75,11 @@ fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
     return pipeline
 }
 
-fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName: String = "content"): Pipeline {
+fun constructVTMPipeline(stopwords: Array<String>,
+                         vocabSize: Int,
+                         inputColName: String = "content",
+                         isTest : Boolean = false): Pipeline {
+
     val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
 
     val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
@@ -111,7 +117,11 @@ fun constructVTMPipeline(stopwords: Array<String>, vocabSize: Int, inputColName:
             .setWithStd(true)
             .setWithMean(false)
 
-    val pipeline = Pipeline().setStages(arrayOf(indexer, tokenizer, remover, ngram, cvModel, scaler))
+    val pipeline = if (isTest){
+        Pipeline().setStages(arrayOf(tokenizer, remover, ngram, cvModel, scaler))
+    } else {
+        Pipeline().setStages(arrayOf(indexer, tokenizer, remover, ngram, cvModel, scaler))
+    }
 
     return pipeline
 }
@@ -226,3 +236,8 @@ fun setTfIdfModel(corpus: Dataset<Row>): IDFModel {
 }
 
 
+fun loadStopwords(jsc : JavaSparkContext, stopwordsFileName: String = "./data/stopwords.txt") : Broadcast<Array<String>> {
+
+    val stopwords = jsc.broadcast(jsc.textFile(stopwordsFileName).collect().toTypedArray())
+    return stopwords
+}

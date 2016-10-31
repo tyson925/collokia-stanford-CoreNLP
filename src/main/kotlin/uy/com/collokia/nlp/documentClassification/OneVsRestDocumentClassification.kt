@@ -1,9 +1,9 @@
 package uy.com.collokia.nlp.documentClassification
 
-
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.CountVectorizerModel
 import org.apache.spark.ml.feature.StandardScalerModel
@@ -21,30 +21,33 @@ import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.constructTagVtmDataPipeline
 import uy.com.collokia.nlp.documentClassification.vtm.constructTitleVtmDataPipeline
 import uy.com.collokia.nlp.documentClassification.vtm.constructVTMPipeline
+import uy.com.collokia.nlp.documentClassification.vtm.loadStopwords
 import uy.com.collokia.nlp.parser.mate.lemmatizedContentCol
-import java.text.DecimalFormat
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"
 const val LABELS = "./data/model/labelIndexer_2"
 const val REUTERS_DATA = "./data/reuters/json/reuters.json"
-const val VTM_PIPELINE = "./data/model/vtmPipeLine"
+const val VTM_PIPELINE_MODEL_NAME = "./data/model/vtmPipeLine"
+const val TITLE_PIPELINE_MODEL_NAME = "./data/model/titlePipeLine"
+const val TAGS_PIPELINE_MODEL_NAME ="./data/model/tagsPipeLine"
 
+//const val corpusFileName = "./data/classification/dzone/dzone.parquet"
+//val formatter = DecimalFormat("#0.00")
 
-const val corpusFileName = "./data/classification/dzone/dzone.parquet"
-val formatter = DecimalFormat("#0.00")
+fun generateDzoneVTM(jsc: JavaSparkContext, corpus: Dataset<Row>, tagColName: String = tagInputColName, isTest: Boolean = false)
+        : Dataset<Row> {
 
-fun generateDzoneVTM(jsc: JavaSparkContext, corpus: Dataset<Row>, tagColName: String = tagInputColName): Dataset<Row> {
-    val stopwords = jsc.broadcast(jsc.textFile("./data/stopwords.txt").collect().toTypedArray())
+    val stopwords = loadStopwords(jsc)
 
     println("CORPUS SIZE:\t${corpus.count()}")
 
-    val dataset = generateVTM(corpus, stopwords, isRunLocal = true, tagColName = tagColName)
+    val dataset = generateVTM(corpus, stopwords, isRunLocal = true, tagColName = tagColName, isTest = isTest)
     return dataset
 }
 
 fun generateDzoneVTM(jsc: JavaSparkContext, sparkSession: SparkSession, tagColName: String = tagInputColName): Dataset<Row> {
 
-    val stopwords = jsc.broadcast(jsc.textFile("./data/stopwords.txt").collect().toTypedArray())
+    val stopwords = loadStopwords(jsc)
 
     val corpus = readDzoneDataFromJson(sparkSession, jsc)
 
@@ -55,23 +58,34 @@ fun generateDzoneVTM(jsc: JavaSparkContext, sparkSession: SparkSession, tagColNa
 fun generateVTM(corpus: Dataset<Row>,
                 stopwords: Broadcast<Array<String>>,
                 isRunLocal: Boolean,
-                tagColName: String = tagInputColName): Dataset<Row> {
+                tagColName: String = tagInputColName,
+                isTest: Boolean = false): Dataset<Row> {
 
-    val vtmDataPipeline = constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE, lemmatizedContentCol)
+    val vtmPipelineModel = if (isTest) {
+        PipelineModel.load(VTM_PIPELINE_MODEL_NAME)
+    } else {
+        constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE, lemmatizedContentCol, isTest).fit(corpus)
+    }
 
     println(corpus.count())
 
-    val vtmPipelineModel = vtmDataPipeline.fit(corpus)
+    /*if (isTest) {
+        vtmPipelineModel.stages()[3] as CountVectorizerModel
+    } else {
 
-    val cvModel = vtmPipelineModel.stages()[4] as CountVectorizerModel
+    }*/
+
+    val cvModel =  vtmPipelineModel.stages()[4] as CountVectorizerModel
     println("cv model vocabulary: " + cvModel.vocabulary().toList())
 
-    val indexer = vtmPipelineModel.stages()[0] as StringIndexerModel
+    if (!isTest) {
+        val indexer = vtmPipelineModel.stages()[0] as StringIndexerModel
 
-    if (isRunLocal) {
-        if (deleteIfExists(LABELS)) {
-            println("save labels...")
-            indexer.save(LABELS)
+        if (isRunLocal) {
+            if (deleteIfExists(LABELS)) {
+                println("save labels...")
+                indexer.save(LABELS)
+            }
         }
     }
 
@@ -82,9 +96,11 @@ fun generateVTM(corpus: Dataset<Row>,
             ngramOutputCol,
             cvModelOutputCol)
 
-    val vtmTitlePipeline = constructTitleVtmDataPipeline(stopwords.value, TITLE_VTM_VOC_SIZE)
-
-    val vtmTitlePipelineModel = vtmTitlePipeline.fit(parsedCorpus)
+    val vtmTitlePipelineModel = if (isTest){
+        PipelineModel.load(TITLE_PIPELINE_MODEL_NAME)
+    } else {
+        constructTitleVtmDataPipeline(stopwords.value, TITLE_VTM_VOC_SIZE).fit(parsedCorpus)
+    }
 
     val parsedCorpusTitle = vtmTitlePipelineModel.transform(parsedCorpus).drop(
             titleTokenizerOutputCol,
@@ -96,7 +112,11 @@ fun generateVTM(corpus: Dataset<Row>,
 
     val vtmTagPipeline = constructTagVtmDataPipeline(TAG_VTM_VOC_SIZE, tagColName)
 
-    val vtmTagPipelineModel = vtmTagPipeline.fit(parsedCorpusTitle)
+    val vtmTagPipelineModel = if (isTest) {
+        PipelineModel.load(TAGS_PIPELINE_MODEL_NAME)
+    } else {
+        vtmTagPipeline.fit(parsedCorpusTitle)
+    }
 
     val fullParsedCorpus = vtmTagPipelineModel.transform(parsedCorpusTitle).drop(tagTokenizerOutputCol, tagCvModelOutputCol)
 
@@ -112,16 +132,20 @@ fun generateVTM(corpus: Dataset<Row>,
     val dataset = assembler.transform(fullParsedCorpus)
 
     if (isRunLocal) {
-        if (deleteIfExists(VTM_PIPELINE)) {
-            vtmPipelineModel.save(VTM_PIPELINE)
+        if (deleteIfExists(VTM_PIPELINE_MODEL_NAME)) {
+            vtmPipelineModel.save(VTM_PIPELINE_MODEL_NAME)
         }
-//        dataset.write().save(corpusFileName)
+        if (deleteIfExists(TITLE_PIPELINE_MODEL_NAME)){
+            vtmTitlePipelineModel.save(TITLE_PIPELINE_MODEL_NAME)
+        }
+        if (deleteIfExists(TAGS_PIPELINE_MODEL_NAME)){
+            vtmTagPipelineModel.save(TAGS_PIPELINE_MODEL_NAME)
+        }
     } else {
 
     }
 
     return dataset
-
 }
 
 
