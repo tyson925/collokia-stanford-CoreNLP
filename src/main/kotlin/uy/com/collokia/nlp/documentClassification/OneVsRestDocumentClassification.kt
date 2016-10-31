@@ -69,12 +69,6 @@ fun generateVTM(corpus: Dataset<Row>,
 
     println(corpus.count())
 
-    /*if (isTest) {
-        vtmPipelineModel.stages()[3] as CountVectorizerModel
-    } else {
-
-    }*/
-
     val cvModel =  vtmPipelineModel.stages()[4] as CountVectorizerModel
     println("cv model vocabulary: " + cvModel.vocabulary().toList())
 
