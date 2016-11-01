@@ -16,7 +16,8 @@ class OwnNGram : PersistableUnaryTransformer<WrappedArray<String>, Array<String>
     }
 
     override fun uid(): String? {
-        throw UnsupportedOperationException()
+        //return UUID.randomUUID().toString()
+        return "uid1111111"
     }
 
 
