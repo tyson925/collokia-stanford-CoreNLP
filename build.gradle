@@ -61,6 +61,7 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:$version_jackson"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$version_jackson_kotlin"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
+    compile files(['scalalib/lib.jar'])
 
     configurations.all {
         resolutionStrategy {
