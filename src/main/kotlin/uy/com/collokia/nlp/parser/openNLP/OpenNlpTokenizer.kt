@@ -3,12 +3,14 @@ package uy.com.collokia.nlp.parser.openNLP
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.SchemaUtils
-import org.apache.spark.sql.*
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.api.java.UDF1
+import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
-import java.io.Serializable
 
 const val tokenizedContent = "tokenizedContent"
 

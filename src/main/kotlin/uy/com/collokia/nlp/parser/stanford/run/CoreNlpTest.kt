@@ -1,21 +1,19 @@
 package uy.com.collokia.nlp.parser.stanford.run
 
 
-import org.apache.spark.SparkConf
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql.SparkSession
 import scala.Serializable
-import scala.Tuple2
+import uy.com.collokia.common.utils.rdd.closeSpark
+import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.nlp.parser.stanford.coreNLP.CoreNLP
-import java.util.*
 
-public class TestData(val id: Int, val category : String, val categoryIndex : Double, val content: String) : Serializable
+class TestData(val id: Int, val category : String, val categoryIndex : Double, val content: String) : Serializable
 
 
-@Suppress("UNCHECKED_CAST")
-public class CoreNlpTest() {
+@Suppress("UNCHECKED_CAST") class CoreNlpTest() {
 
-    public fun testCoreNlp(jsc: JavaSparkContext, sparkSession: SparkSession) {
+    fun testCoreNlp(jsc: JavaSparkContext, sparkSession: SparkSession) {
 
         val test = listOf(TestData(1,"bigData",1.0,"<xml>Stanford University is located in California. It is a great university.</xml>"),
                 TestData(1,"bigData",1.0,"<xml>University of Szeged is located in Hungary. It is a great university.</xml>"),
@@ -58,10 +56,10 @@ public class CoreNlpTest() {
 }
 
 fun main(args: Array<String>) {
-    val sparkConf = SparkConf().setAppName("classificationTest").setMaster("local[2]")
 
-    val jsc = JavaSparkContext(sparkConf)
-    val sparkSession = SparkSession.builder().master("local").appName("prediction").getOrCreate()
+
+    val jsc = getLocalSparkContext("valami")
+    val sparkSession = SparkSession.builder().master("local").appName("prediction").orCreate
 
     /*val test = LinkedList<Tuple2<Int,String>>()
     test.add(Tuple2(1, "<xml>Stanford University is located in California. It is a great university.</xml>"))
@@ -78,8 +76,7 @@ fun main(args: Array<String>) {
     test.testCoreNlp(jsc, sparkSession)
 
 
-    jsc.close()
-    jsc.stop()
+    closeSpark(jsc)
 
 }
 

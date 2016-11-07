@@ -43,9 +43,7 @@ class MateLemmatizer : Transformer {
 
             sentenceArray[0] = "<root>"
 
-            for (i in 0..tokens.size() - 1) {
-                sentenceArray[i + 1] = tokens.apply(i)
-            }
+            (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
 
             val lemmatized = SentenceData09()
             lemmatized.init(sentenceArray)

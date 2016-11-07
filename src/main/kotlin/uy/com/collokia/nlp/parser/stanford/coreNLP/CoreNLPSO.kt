@@ -15,7 +15,6 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import java.io.Serializable
 import java.util.*
-import kotlin.properties.Delegates
 
 
 //public data class ParsedSoPage(var id: String, var parsedContent: String, var title: String, var codes: String,
@@ -40,7 +39,7 @@ class CoreNLPSO : Transformer, Serializable {
         //CoreNLP("corenlp_" + UUID.randomUUID().toString().drop(12))
         val props = Properties()
         //tokenize,
-        props.setProperty("annotators", "tokenize, ssplit, ${annotations}")
+        props.setProperty("annotators", "tokenize, ssplit, $annotations")
         wrapper = StanfordCoreNLPWrapper(props)
         inputColName = "content"
     }
@@ -66,8 +65,14 @@ class CoreNLPSO : Transformer, Serializable {
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
         return dataset?.let {
-            val colums = listOf(dataset.col("id"), dataset.col("title"), dataset.col("codes"), dataset.col("imports"), dataset.col("tags"),
-                    dataset.col("category"), dataset.col(inputColName))
+            val colums = listOf(dataset.col("id"),
+                    dataset.col("title"),
+                    dataset.col("codes"),
+                    dataset.col("imports"),
+                    dataset.col("tags"),
+                    dataset.col("category"),
+                    dataset.col(inputColName))
+
             val columsSeq = JavaConversions.asScalaBuffer(colums)
             val selectContent = dataset.select(columsSeq)
             val beanEncoder = Encoders.bean(ParsedSoPage::class.java)

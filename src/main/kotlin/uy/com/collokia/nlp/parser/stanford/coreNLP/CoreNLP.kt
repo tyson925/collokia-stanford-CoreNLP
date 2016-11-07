@@ -1,8 +1,11 @@
+@file:Suppress("RemoveForLoopIndices")
+
 package uy.com.collokia.nlp.parser.stanford.coreNLP
 
 import edu.stanford.nlp.ling.CoreAnnotations
 import edu.stanford.nlp.pipeline.Annotation
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations
+import edu.stanford.nlp.semgraph.SemanticGraphEdge
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.sql.*
@@ -13,8 +16,8 @@ import java.io.Serializable
 import java.util.*
 
 data class ParsedSentenceBean(var category: String, var categoryIndex: Double, var content: String, var title: String,
-                                     var labels: List<String>, var tokens: String, var poses: String, var lemmas: String,
-                                     var parses: String, var ners: String) : Serializable
+                              var labels: List<String>, var tokens: String, var poses: String, var lemmas: String,
+                              var parses: String, var ners: String) : Serializable
 
 
 class CoreNLP : Transformer {
@@ -33,7 +36,7 @@ class CoreNLP : Transformer {
         //CoreNLP("corenlp_" + UUID.randomUUID().toString().drop(12))
         val props = Properties()
         //tokenize,
-        props.setProperty("annotators", "tokenize, ssplit, ${annotations}")
+        props.setProperty("annotators", "tokenize, ssplit, $annotations")
         wrapper = StanfordCoreNLPWrapper(props)
     }
 
@@ -131,9 +134,7 @@ class CoreNLP : Transformer {
                         //SemanticGraph dependencies = sentence.get(CoreAnnotations.CoNLLDepAnnotation.class);
                         val edgeList = dependencies.edgeListSorted()
 
-                        val parseArray = edgeList.map { edge ->
-                            edge.toString()
-                        }
+                        val parseArray = edgeList.map(SemanticGraphEdge::toString)
                         parses.addAll(parseArray)
                     }
 
@@ -196,6 +197,5 @@ class CoreNLP : Transformer {
 
 
 }
-
 
 

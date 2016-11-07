@@ -16,16 +16,15 @@ import org.apache.spark.sql.Row
 import scala.Tuple2
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.nlp.transformer.OwnNGram
-import java.io.Serializable
 
 
 @Suppress("UNUSED_VARIABLE")
 
-//data class SimpleDocument(var category: String, var content: String, var title: String, var labels: String) : Serializable
+        //data class SimpleDocument(var category: String, var content: String, var title: String, var labels: String) : Serializable
 
 fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
-                              categoryColName : String = "category",
-                              contentColName : String = "content"): Dataset<Row> {
+                              categoryColName: String = "category",
+                              contentColName: String = "content"): Dataset<Row> {
 
     val indexer = StringIndexer().setInputCol(categoryColName).setOutputCol(labelIndexCol).fit(textDataFrame)
     println(indexer.labels().joinToString("\t"))
@@ -49,7 +48,7 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
     return filteredWordsDataFrame
 }
 
-fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
+fun constructNgrams(stopwords: Set<String>, inputColName: String): Pipeline {
     val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
             .setMinTokenLength(2)
             .setToLowercase(false)
@@ -70,7 +69,7 @@ fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
 
     val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
 
-    val pipeline = Pipeline().setStages(arrayOf(tokenizer,remover, ngram))
+    val pipeline = Pipeline().setStages(arrayOf(tokenizer, remover, ngram))
 
     return pipeline
 }
@@ -78,7 +77,7 @@ fun constructNgrams(stopwords: Set<String>,inputColName: String): Pipeline {
 fun constructVTMPipeline(stopwords: Array<String>,
                          vocabSize: Int,
                          inputColName: String = "content",
-                         isTest : Boolean = false): Pipeline {
+                         isTest: Boolean = false): Pipeline {
 
     val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
 
@@ -117,7 +116,7 @@ fun constructVTMPipeline(stopwords: Array<String>,
             .setWithStd(true)
             .setWithMean(false)
 
-    val pipeline = if (isTest){
+    val pipeline = if (isTest) {
         Pipeline().setStages(arrayOf(tokenizer, remover, ngram, cvModel, scaler))
     } else {
         Pipeline().setStages(arrayOf(indexer, tokenizer, remover, ngram, cvModel, scaler))
@@ -170,7 +169,7 @@ fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pip
     return pipeline
 }
 
-fun constructTagVtmDataPipeline(vocabSize: Int, inputColName : String = "labels"): Pipeline {
+fun constructTagVtmDataPipeline(vocabSize: Int, inputColName: String = "labels"): Pipeline {
     val tagTokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tagTokenizerOutputCol)
             .setMinTokenLength(2)
             .setToLowercase(true)
@@ -236,7 +235,7 @@ fun setTfIdfModel(corpus: Dataset<Row>): IDFModel {
 }
 
 
-fun loadStopwords(jsc : JavaSparkContext, stopwordsFileName: String = "./data/stopwords.txt") : Broadcast<Array<String>> {
+fun loadStopwords(jsc: JavaSparkContext, stopwordsFileName: String = "./data/stopwords.txt"): Broadcast<Array<String>> {
 
     val stopwords = jsc.broadcast(jsc.textFile(stopwordsFileName).collect().toTypedArray())
     return stopwords
