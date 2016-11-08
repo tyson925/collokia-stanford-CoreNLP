@@ -5,9 +5,8 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.CountVectorizerModel
 import org.apache.spark.ml.feature.StandardScalerModel
-import org.apache.spark.ml.feature.StringIndexerModel
+import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.ml.tuning.CrossValidator
 import org.apache.spark.ml.tuning.ParamGridBuilder
@@ -18,18 +17,16 @@ import scala.Tuple2
 import uy.com.collokia.common.utils.deleteIfExists
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
-import uy.com.collokia.nlp.documentClassification.vtm.constructTagVtmDataPipeline
-import uy.com.collokia.nlp.documentClassification.vtm.constructTitleVtmDataPipeline
-import uy.com.collokia.nlp.documentClassification.vtm.constructVTMPipeline
-import uy.com.collokia.nlp.documentClassification.vtm.loadStopwords
+import uy.com.collokia.nlp.documentClassification.vtm.*
 import uy.com.collokia.nlp.parser.mate.lemmatizedContentCol
+import uy.com.collokia.nlp.transformer.OwnNGram
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"
 const val LABELS = "./data/model/labelIndexer_2"
 const val REUTERS_DATA = "./data/reuters/json/reuters.json"
 const val VTM_PIPELINE_MODEL_NAME = "./data/model/vtmPipeLine"
 const val TITLE_PIPELINE_MODEL_NAME = "./data/model/titlePipeLine"
-const val TAGS_PIPELINE_MODEL_NAME ="./data/model/tagsPipeLine"
+const val TAGS_PIPELINE_MODEL_NAME = "./data/model/tagsPipeLine"
 
 //const val corpusFileName = "./data/classification/dzone/dzone.parquet"
 //val formatter = DecimalFormat("#0.00")
@@ -55,91 +52,118 @@ fun generateDzoneVTM(jsc: JavaSparkContext, sparkSession: SparkSession, tagColNa
     return dataset
 }
 
+
 fun generateVTM(corpus: Dataset<Row>,
                 stopwords: Broadcast<Array<String>>,
                 isRunLocal: Boolean,
                 tagColName: String = tagInputColName,
                 isTest: Boolean = false): Dataset<Row> {
 
-    val vtmPipelineModel = if (isTest) {
-        PipelineModel.load(VTM_PIPELINE_MODEL_NAME)
+    val ngramPipe = constructNgramsPipeline(constructNgrams(stopwords.value.toSet(), lemmatizedContentCol))
+
+    val parsedCorpus = ngramPipe.fit(corpus).transform(corpus).drop(lemmatizedContentCol,
+            lemmatizedContentCol + "_" + tokenizerOutputCol,
+            lemmatizedContentCol + "_" + removeOutputCol)
+
+    val vtmModel = loadPipelineModel(isTest = isTest,
+            isRunLocal = isRunLocal,
+            corpus = parsedCorpus,
+            modelName = VTM_PIPELINE_MODEL_NAME,
+            vtmSize = CONTENT_VTM_VOC_SIZE,
+            inputColName = (ngramPipe.stages.last() as OwnNGram).outputCol)
+
+
+    val vtm = vtmModel.transform(parsedCorpus).drop(lemmatizedContentCol + "_" + ngramOutputCol,
+            lemmatizedContentCol + "_" + cvModelOutputCol)
+
+    val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
+
+    val indexerModel = indexer.fit(vtm)
+
+    val indexedVTM = if (isTest) {
+        vtm
     } else {
-        constructVTMPipeline(stopwords.value, CONTENT_VTM_VOC_SIZE, lemmatizedContentCol, isTest).fit(corpus)
+        indexerModel.transform(vtm)
     }
 
-    println(corpus.count())
-
-    val cvModel =  vtmPipelineModel.stages()[4] as CountVectorizerModel
-    println("cv model vocabulary: " + cvModel.vocabulary().toList())
-
-    if (!isTest) {
-        val indexer = vtmPipelineModel.stages()[0] as StringIndexerModel
-
-        if (isRunLocal) {
-            if (deleteIfExists(LABELS)) {
-                println("save labels...")
-                indexer.save(LABELS)
-            }
+    if (isRunLocal) {
+        if (deleteIfExists(LABELS)) {
+            println("save labels...")
+            indexerModel.save(LABELS)
         }
     }
 
-    val parsedCorpus = vtmPipelineModel.transform(corpus).drop(
-            lemmatizedContentCol,
-            tokenizerOutputCol,
-            removeOutputCol,
-            ngramOutputCol,
-            cvModelOutputCol)
+    val titleNgramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(), inputColName =  "title"))
 
-    val vtmTitlePipelineModel = if (isTest){
-        PipelineModel.load(TITLE_PIPELINE_MODEL_NAME)
-    } else {
-        constructTitleVtmDataPipeline(stopwords.value, TITLE_VTM_VOC_SIZE).fit(parsedCorpus)
-    }
+    val parsedCorpusTitle = titleNgramPipe.fit(indexedVTM).transform(indexedVTM).drop(
+            "title_" + tokenizerOutputCol,
+            "title_" + removeOutputCol)
 
-    val parsedCorpusTitle = vtmTitlePipelineModel.transform(parsedCorpus).drop(
-            titleTokenizerOutputCol,
-            titleRemoverOutputCol,
-            titleNgramsOutputCol,
-            titleCvModelOutputCol)
+    println("title output colname: " + (titleNgramPipe.stages.last() as OwnNGram).outputCol)
 
-    //parsedCorpusTitle.show(10, false)
+    val vtmTitlePipelineModel = loadPipelineModel(isTest = isTest,
+            isRunLocal = isRunLocal,
+            corpus = parsedCorpusTitle,
+            modelName = TITLE_PIPELINE_MODEL_NAME,
+            vtmSize = TITLE_VTM_VOC_SIZE,
+            inputColName = (titleNgramPipe.stages.last() as OwnNGram).outputCol)
+
+
+    val vtmTitleCorpus = vtmTitlePipelineModel.transform(parsedCorpusTitle).drop("title_" + ngramOutputCol,
+            "title_" + cvModelOutputCol)
 
     val vtmTagPipeline = constructTagVtmDataPipeline(TAG_VTM_VOC_SIZE, tagColName)
 
     val vtmTagPipelineModel = if (isTest) {
         PipelineModel.load(TAGS_PIPELINE_MODEL_NAME)
     } else {
-        vtmTagPipeline.fit(parsedCorpusTitle)
+        val model = vtmTagPipeline.fit(vtmTitleCorpus)
+        savePipelineModel(model, TAGS_PIPELINE_MODEL_NAME)
+        model
     }
 
-    val fullParsedCorpus = vtmTagPipelineModel.transform(parsedCorpusTitle).drop(tagTokenizerOutputCol, tagCvModelOutputCol)
+    val fullParsedCorpus = vtmTagPipelineModel.transform(vtmTitleCorpus).drop(tagColName + "_" + tokenizerOutputCol,
+            tagColName + "_" + cvModelOutputCol)
 
-    val contentScaler = vtmPipelineModel.stages().last() as StandardScalerModel
+    val contentScaler = vtmModel.stages().last() as StandardScalerModel
 
     val titleNormalizer = vtmTitlePipelineModel.stages().last() as StandardScalerModel
 
     val tagNormalizer = vtmTagPipelineModel.stages().last() as StandardScalerModel
 
-    val assembler = VectorAssembler().setInputCols(arrayOf(contentScaler.outputCol, titleNormalizer.outputCol, tagNormalizer.outputCol))
+    val assembler = VectorAssembler().setInputCols(arrayOf(contentScaler.outputCol,
+            titleNormalizer.outputCol,
+            tagNormalizer.outputCol))
             .setOutputCol(featureCol)
 
-    val dataset = assembler.transform(fullParsedCorpus)
-
-    if (isRunLocal) {
-        if (deleteIfExists(VTM_PIPELINE_MODEL_NAME)) {
-            vtmPipelineModel.save(VTM_PIPELINE_MODEL_NAME)
-        }
-        if (deleteIfExists(TITLE_PIPELINE_MODEL_NAME)){
-            vtmTitlePipelineModel.save(TITLE_PIPELINE_MODEL_NAME)
-        }
-        if (deleteIfExists(TAGS_PIPELINE_MODEL_NAME)){
-            vtmTagPipelineModel.save(TAGS_PIPELINE_MODEL_NAME)
-        }
-    } else {
-
-    }
+    val dataset = assembler.transform(fullParsedCorpus).drop(contentScaler.outputCol,titleNormalizer.outputCol,tagNormalizer.outputCol)
 
     return dataset
+}
+
+fun savePipelineModel(pipelineModel: PipelineModel, name: String) {
+    if (deleteIfExists(name)) {
+        pipelineModel.save(name)
+    }
+}
+
+fun loadPipelineModel(isTest: Boolean = false,
+                      isRunLocal: Boolean,
+                      corpus: Dataset<Row>,
+                      modelName: String,
+                      vtmSize: Int,
+                      inputColName: String): PipelineModel {
+
+
+    return if (isTest) {
+        PipelineModel.load(modelName)
+    } else {
+        val model = Pipeline().setStages(constructVTM(vtmSize, inputColName)).fit(corpus)
+        if (isRunLocal) {
+            savePipelineModel(model, modelName)
+        }
+        model
+    }
 }
 
 

@@ -8,6 +8,8 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.PipelineModel
+import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.feature.*
 import org.apache.spark.ml.linalg.SparseVector
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -48,10 +50,19 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
     return filteredWordsDataFrame
 }
 
-fun constructNgrams(stopwords: Set<String>, inputColName: String): Pipeline {
-    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
-            .setMinTokenLength(2)
-            .setToLowercase(false)
+fun constructNgramsPipeline(stages: Array<PipelineStage>): Pipeline {
+    val pipeline = Pipeline().setStages(stages)
+    return pipeline
+}
+
+fun constructNgrams(stopwords: Set<String> = setOf(),
+                    inputColName: String = "content",
+                    toLowercase : Boolean = false,
+                    minTokenLength : Int = 2): Array<PipelineStage> {
+
+    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
+            .setMinTokenLength(minTokenLength)
+            .setToLowercase(toLowercase)
             .setPattern("\\w+")
             .setGaps(false)
 
@@ -63,15 +74,40 @@ fun constructNgrams(stopwords: Set<String>, inputColName: String): Pipeline {
         stopwords.toTypedArray()
     }
 
-    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(removeOutputCol)
+    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(inputColName + "_" + removeOutputCol)
             .setStopWords(stopwordsApplied)
             .setCaseSensitive(false)
 
-    val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
+    val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
 
-    val pipeline = Pipeline().setStages(arrayOf(tokenizer, remover, ngram))
+    return arrayOf(tokenizer, remover, ngram)
+}
 
-    return pipeline
+fun constructVTM(vocabSize: Int = CONTENT_VTM_VOC_SIZE, vtmInputCol: String): Array<PipelineStage> {
+
+    val prefix = if (vtmInputCol.contains("_")){
+        vtmInputCol.split("_").first()
+    } else {
+        vtmInputCol
+    }
+
+    val cvModel = CountVectorizer().setInputCol(vtmInputCol)
+            .setVocabSize(vocabSize)
+            .setMinDF(3.0)
+            .setOutputCol(prefix + "_" + cvModelOutputCol)
+
+    //it is useless
+    //val idf = IDF().setInputCol(cvModel.outputCol).setOutputCol("idfFeatures").setMinDocFreq(3)
+
+    val normalizer = Normalizer().setInputCol(cvModel.outputCol).setOutputCol(prefix + "_" + normalizerOutputCol).setP(1.0)
+
+    val scaler = StandardScaler()
+            .setInputCol(normalizer.outputCol)
+            .setOutputCol(prefix + "_" + contentOutputCol)
+            .setWithStd(true)
+            .setWithMean(false)
+
+    return arrayOf(cvModel,normalizer,scaler)
 }
 
 fun constructVTMPipeline(stopwords: Array<String>,
@@ -81,51 +117,31 @@ fun constructVTMPipeline(stopwords: Array<String>,
 
     val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
 
-    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tokenizerOutputCol)
-            .setMinTokenLength(3)
-            .setToLowercase(false)
-            .setPattern("\\w+")
-            .setGaps(false)
+    val ngramPipline = constructNgrams(stopwords.toSet(), inputColName)
 
-    val stopwordsApplied = if (stopwords.isEmpty()) {
-        println("Load default english stopwords...")
-        StopWordsRemover.loadDefaultStopWords("english")
-    } else {
-        println("Load stopwords...")
-        stopwords
-    }
 
-    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(removeOutputCol)
-            .setStopWords(stopwordsApplied)
-            .setCaseSensitive(false)
+    val tokenizer = ngramPipline[0] as Tokenizer
+    val remover = ngramPipline[1] as StopWordsRemover
+    val ngram = ngramPipline[2] as OwnNGram
 
-    val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
+    val vtm = constructVTM(vocabSize,ngram.outputCol)
 
-    val cvModel = CountVectorizer().setInputCol(ngram.outputCol)
-            .setVocabSize(vocabSize)
-            .setMinDF(3.0)
-            .setOutputCol(cvModelOutputCol)
+    val cvModel = vtm[0] as CountVectorizer
 
-    //it is useless
-    //val idf = IDF().setInputCol(cvModel.outputCol).setOutputCol("idfFeatures").setMinDocFreq(3)
+    val normalizer = vtm[1] as Normalizer
 
-    val normalizer = Normalizer().setInputCol(cvModel.outputCol).setOutputCol(contentOutputCol).setP(1.0)
-    val scaler = StandardScaler()
-            .setInputCol(cvModel.outputCol)
-            .setOutputCol(contentOutputCol)
-            .setWithStd(true)
-            .setWithMean(false)
+    val scaler = vtm[2] as StandardScaler
 
     val pipeline = if (isTest) {
-        Pipeline().setStages(arrayOf(tokenizer, remover, ngram, cvModel, scaler))
+        Pipeline().setStages(arrayOf(tokenizer, remover, ngram, cvModel, normalizer, scaler))
     } else {
-        Pipeline().setStages(arrayOf(indexer, tokenizer, remover, ngram, cvModel, scaler))
+        Pipeline().setStages(arrayOf(indexer, tokenizer, remover, ngram, cvModel, normalizer, scaler))
     }
 
     return pipeline
 }
 
-fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pipeline {
+/*fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pipeline {
 
     val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
@@ -167,29 +183,27 @@ fun constructTitleVtmDataPipeline(stopwords: Array<String>, vocabSize: Int): Pip
 
     val pipeline = Pipeline().setStages(arrayOf(titleTokenizer, titleRemover, ngram, titleCVModel, scaler))
     return pipeline
-}
+}*/
 
 fun constructTagVtmDataPipeline(vocabSize: Int, inputColName: String = "labels"): Pipeline {
-    val tagTokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(tagTokenizerOutputCol)
+    val tagTokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
             .setMinTokenLength(2)
             .setToLowercase(true)
             .setPattern("\\w+")
             .setGaps(false)
 
-    //val ngram = NGram().setInputCol(tagTokenizer.setOutputCol).setOutputCol("tag_ngrams").setN(3)
-
     val tagCVModel = CountVectorizer().setInputCol(tagTokenizer.outputCol)
-            .setOutputCol(tagCvModelOutputCol)
+            .setOutputCol(inputColName + "_" + cvModelOutputCol)
             .setVocabSize(vocabSize)
             .setMinDF(1.0)
 
     val tagNormalizer = Normalizer().setInputCol(tagCVModel.outputCol)
-            .setOutputCol(tagOutputCol)
+            .setOutputCol(inputColName + "_" + normalizerOutputCol)
             .setP(1.0)
 
     val scaler = StandardScaler()
             .setInputCol(tagCVModel.outputCol)
-            .setOutputCol(tagOutputCol)
+            .setOutputCol(inputColName + "_" + contentOutputCol)
             .setWithStd(true)
             .setWithMean(false)
 
