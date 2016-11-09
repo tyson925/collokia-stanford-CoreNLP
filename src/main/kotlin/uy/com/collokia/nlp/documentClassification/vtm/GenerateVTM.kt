@@ -8,7 +8,6 @@ import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.feature.*
 import org.apache.spark.ml.linalg.SparseVector
@@ -17,7 +16,7 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
 import uy.com.collokia.common.utils.nlp.*
-import uy.com.collokia.nlp.transformer.OwnNGram
+import uy.com.collokia.nlp.transformer.ngram.OwnNGram
 
 
 @Suppress("UNUSED_VARIABLE")
@@ -57,8 +56,8 @@ fun constructNgramsPipeline(stages: Array<PipelineStage>): Pipeline {
 
 fun constructNgrams(stopwords: Set<String> = setOf(),
                     inputColName: String = "content",
-                    toLowercase : Boolean = false,
-                    minTokenLength : Int = 2): Array<PipelineStage> {
+                    toLowercase: Boolean = false,
+                    minTokenLength: Int = 2): Array<PipelineStage> {
 
     val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
             .setMinTokenLength(minTokenLength)
@@ -85,7 +84,7 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
 
 fun constructVTM(vocabSize: Int = CONTENT_VTM_VOC_SIZE, vtmInputCol: String): Array<PipelineStage> {
 
-    val prefix = if (vtmInputCol.contains("_")){
+    val prefix = if (vtmInputCol.contains("_")) {
         vtmInputCol.split("_").first()
     } else {
         vtmInputCol
@@ -107,7 +106,7 @@ fun constructVTM(vocabSize: Int = CONTENT_VTM_VOC_SIZE, vtmInputCol: String): Ar
             .setWithStd(true)
             .setWithMean(false)
 
-    return arrayOf(cvModel,normalizer,scaler)
+    return arrayOf(cvModel, normalizer, scaler)
 }
 
 fun constructVTMPipeline(stopwords: Array<String>,
@@ -124,7 +123,7 @@ fun constructVTMPipeline(stopwords: Array<String>,
     val remover = ngramPipline[1] as StopWordsRemover
     val ngram = ngramPipline[2] as OwnNGram
 
-    val vtm = constructVTM(vocabSize,ngram.outputCol)
+    val vtm = constructVTM(vocabSize, ngram.outputCol)
 
     val cvModel = vtm[0] as CountVectorizer
 

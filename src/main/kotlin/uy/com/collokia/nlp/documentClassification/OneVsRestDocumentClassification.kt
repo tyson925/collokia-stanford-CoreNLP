@@ -19,7 +19,7 @@ import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
 import uy.com.collokia.nlp.parser.mate.lemmatizedContentCol
-import uy.com.collokia.nlp.transformer.OwnNGram
+import uy.com.collokia.nlp.transformer.ngram.OwnNGram
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"
 const val LABELS = "./data/model/labelIndexer_2"
@@ -59,7 +59,9 @@ fun generateVTM(corpus: Dataset<Row>,
                 tagColName: String = tagInputColName,
                 isTest: Boolean = false): Dataset<Row> {
 
-    val ngramPipe = constructNgramsPipeline(constructNgrams(stopwords.value.toSet(), lemmatizedContentCol))
+    val ngramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(),
+            inputColName = lemmatizedContentCol,
+            toLowercase = true))
 
     val parsedCorpus = ngramPipe.fit(corpus).transform(corpus).drop(lemmatizedContentCol,
             lemmatizedContentCol + "_" + tokenizerOutputCol,
@@ -93,7 +95,9 @@ fun generateVTM(corpus: Dataset<Row>,
         }
     }
 
-    val titleNgramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(), inputColName =  "title"))
+    val titleNgramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(),
+            inputColName = "title",
+            toLowercase = false))
 
     val parsedCorpusTitle = titleNgramPipe.fit(indexedVTM).transform(indexedVTM).drop(
             "title_" + tokenizerOutputCol,
@@ -136,7 +140,7 @@ fun generateVTM(corpus: Dataset<Row>,
             tagNormalizer.outputCol))
             .setOutputCol(featureCol)
 
-    val dataset = assembler.transform(fullParsedCorpus).drop(contentScaler.outputCol,titleNormalizer.outputCol,tagNormalizer.outputCol)
+    val dataset = assembler.transform(fullParsedCorpus).drop(contentScaler.outputCol, titleNormalizer.outputCol, tagNormalizer.outputCol)
 
     return dataset
 }
