@@ -116,11 +116,13 @@ fun generateVTM(corpus: Dataset<Row>,
     val vtmTitleCorpus = vtmTitlePipelineModel.transform(parsedCorpusTitle).drop("title_" + ngramOutputCol,
             "title_" + cvModelOutputCol)
 
-    val vtmTagPipeline = constructTagVtmDataPipeline(TAG_VTM_VOC_SIZE, tagColName)
+
 
     val vtmTagPipelineModel = if (isTest) {
         PipelineModel.load(TAGS_PIPELINE_MODEL_NAME)
     } else {
+        println(vtmTitleCorpus.schema())
+        val vtmTagPipeline = constructTagVtmDataPipeline(TAG_VTM_VOC_SIZE, tagColName)
         val model = vtmTagPipeline.fit(vtmTitleCorpus)
         savePipelineModel(model, TAGS_PIPELINE_MODEL_NAME)
         model

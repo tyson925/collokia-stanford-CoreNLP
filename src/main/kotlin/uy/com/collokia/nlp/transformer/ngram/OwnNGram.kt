@@ -4,7 +4,6 @@ import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.DataTypes
 import scala.Function1
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.nlp.transformer.ngram.ConvertFunction
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
 
@@ -24,4 +23,5 @@ class OwnNGram : PersistableUnaryTransformer<WrappedArray<String>, Array<String>
 
 
 }
+
 
