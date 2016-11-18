@@ -26,7 +26,9 @@ class MateLemmatizer : Transformer {
 
     constructor(sparkSession: SparkSession,
                 isRaw : Boolean,
-                lemmatizerModel: String = "./../../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model") {
+                lemmatizerModel: String = "./../../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model",
+                inputColName : String = tokenizedContent,
+                outputColName : String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
         this.isRaw = isRaw
@@ -34,8 +36,8 @@ class MateLemmatizer : Transformer {
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 
-        this.inputColName = tokenizedContent
-        this.outputColName = lemmatizedContentCol
+        this.inputColName = inputColName
+        this.outputColName = outputColName
 
         val lemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
 
@@ -53,7 +55,6 @@ class MateLemmatizer : Transformer {
             } else {
                 lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
             }
-
         })
 
         if (isRaw){
@@ -69,19 +70,22 @@ class MateLemmatizer : Transformer {
         return this
     }
 
+    fun setOutputColName(outputColName : String) : MateLemmatizer {
+        this.outputColName = outputColName
+        return this
+    }
+
     override fun uid(): String {
         return "lemmatizer111111"
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(sparkSession,isRaw)
+        return MateLemmatizer(this.sparkSession,this.isRaw, this.inputColName,this.outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
         val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
-
-
 
         return dataset?.select(dataset.col("*"),
                 functions.callUDF("lemmatizer", JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
