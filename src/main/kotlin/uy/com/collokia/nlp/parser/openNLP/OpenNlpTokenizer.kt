@@ -1,3 +1,5 @@
+@file:Suppress("unused", "ConvertSecondaryConstructorToPrimary")
+
 package uy.com.collokia.nlp.parser.openNLP
 
 import org.apache.spark.ml.Transformer
@@ -67,7 +69,7 @@ class OpenNlpTokenizer  : Transformer {
     override fun transformSchema(schema: StructType?): StructType {
         val inputType = schema?.apply(schema.fieldIndex(inputColName))
         val inputTypeMetaData = inputType?.metadata()
-        val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
+        //val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
 
         if (inputTypeMetaData is DataTypes){
             println("Input type must be StringType but got $inputTypeMetaData.")

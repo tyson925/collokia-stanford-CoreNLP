@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlp.parser.mate
 
 import is2.data.SentenceData09
@@ -73,7 +75,7 @@ class MateTagger : Transformer {
     override fun transformSchema(schema: StructType?): StructType {
         val inputType = schema?.apply(schema.fieldIndex(inputColName))
         val inputTypeMetaData = inputType?.metadata()
-        val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
+        //val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
 
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")

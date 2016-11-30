@@ -1,4 +1,4 @@
-@file:Suppress("RemoveForLoopIndices")
+@file:Suppress("RemoveForLoopIndices", "unused")
 
 package uy.com.collokia.nlp.parser.stanford.coreNLP
 

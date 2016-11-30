@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlp.parser.mate
 
 import is2.data.SentenceData09
@@ -21,14 +23,14 @@ class MateLemmatizer : Transformer {
     var inputColName: String
     var outputColName: String
     val sparkSession: SparkSession
-    val isRaw : Boolean
+    val isRaw: Boolean
 
 
     constructor(sparkSession: SparkSession,
-                isRaw : Boolean,
+                isRaw: Boolean,
                 lemmatizerModel: String = "./../../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model",
-                inputColName : String = tokenizedContent,
-                outputColName : String = lemmatizedContentCol) {
+                inputColName: String = tokenizedContent,
+                outputColName: String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
         this.isRaw = isRaw
@@ -57,7 +59,7 @@ class MateLemmatizer : Transformer {
             }
         })
 
-        if (isRaw){
+        if (isRaw) {
             sparkSession.udf().register("lemmatizer", lemmatizer, DataTypes.StringType)
         } else {
             sparkSession.udf().register("lemmatizer", lemmatizer, DataTypes.createArrayType(DataTypes.StringType))
@@ -70,7 +72,7 @@ class MateLemmatizer : Transformer {
         return this
     }
 
-    fun setOutputColName(outputColName : String) : MateLemmatizer {
+    fun setOutputColName(outputColName: String): MateLemmatizer {
         this.outputColName = outputColName
         return this
     }
@@ -80,7 +82,7 @@ class MateLemmatizer : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(this.sparkSession,this.isRaw, this.inputColName,this.outputColName)
+        return MateLemmatizer(this.sparkSession, this.isRaw, this.inputColName, this.outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
@@ -94,7 +96,7 @@ class MateLemmatizer : Transformer {
     override fun transformSchema(schema: StructType?): StructType {
         val inputType = schema?.apply(schema.fieldIndex(inputColName))
         val inputTypeMetaData = inputType?.metadata()
-        val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
+        //val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
 
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")

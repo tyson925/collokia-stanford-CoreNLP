@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlp.contentFilter
 
 import org.apache.spark.ml.Transformer

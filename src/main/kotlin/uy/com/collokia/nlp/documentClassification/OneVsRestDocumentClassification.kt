@@ -1,3 +1,5 @@
+@file:Suppress("unused", "UNUSED_VARIABLE")
+
 package uy.com.collokia.nlp.documentClassification
 
 import org.apache.spark.api.java.JavaSparkContext
