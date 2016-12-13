@@ -6,10 +6,12 @@ import scala.runtime.AbstractFunction1
 import java.io.Serializable
 import java.util.*
 
+const val number_of_grams = 3
+
 class ConvertFunction : AbstractFunction1<WrappedArray<String>, Array<String>>(), Serializable {
     override fun apply(p0: WrappedArray<String>?): Array<String> {
 
-        return wordNGrams(JavaConversions.seqAsJavaList(p0) ?: listOf(), 2, true, " ").toTypedArray()
+        return wordNGrams(JavaConversions.seqAsJavaList(p0) ?: listOf(), number_of_grams, true, " ").toTypedArray()
     }
 
     fun wordNGrams(tokens: List<String>, N: Int, oneToN: Boolean, separator: String = "_"): List<String> {

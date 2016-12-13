@@ -25,8 +25,8 @@ class OpenNlpTokenizer  : Transformer {
     var outputColName : String
 
     constructor(sparkSession: SparkSession,
-            sentenceDetectorModelName : String = "./../../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin",
-            tokenizerModelName: String = "./../../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"){
+            sentenceDetectorModelName : String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin",
+            tokenizerModelName: String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"){
 
         sdetectorWrapper = OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
         tokenizerWrapper = OpenNlpTokenizerWrapper(tokenizerModelName)

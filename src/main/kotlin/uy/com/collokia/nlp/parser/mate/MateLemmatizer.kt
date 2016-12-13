@@ -28,7 +28,7 @@ class MateLemmatizer : Transformer {
 
     constructor(sparkSession: SparkSession,
                 isRaw: Boolean,
-                lemmatizerModel: String = "./../../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model",
+                lemmatizerModel: String = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model",
                 inputColName: String = tokenizedContent,
                 outputColName: String = lemmatizedContentCol) {
 

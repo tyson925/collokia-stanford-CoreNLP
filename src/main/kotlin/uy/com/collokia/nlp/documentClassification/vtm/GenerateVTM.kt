@@ -17,6 +17,8 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
+import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
+import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.nlp.transformer.ngram.OwnNGram
 
@@ -29,7 +31,7 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
                               categoryColName: String = "category",
                               contentColName: String = "content"): Dataset<Row> {
 
-    val indexer = StringIndexer().setInputCol(categoryColName).setOutputCol(labelIndexCol).fit(textDataFrame)
+    val indexer = StringIndexer().setInputCol(categoryColName).setOutputCol(LABEL_COL_NAME).fit(textDataFrame)
     println(indexer.labels().joinToString("\t"))
 
     val indexedTextDataFrame = indexer.transform(textDataFrame)
@@ -37,7 +39,7 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
     val tokenizer = Tokenizer().setInputCol(contentColName).setOutputCol(tokenizerOutputCol)
     val wordsDataFrame = tokenizer.transform(indexedTextDataFrame)
 
-    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(featureCol)
+    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(FEATURE_COL_NAME)
 
     val filteredWordsDataFrame = remover.transform(wordsDataFrame)
 
@@ -116,7 +118,7 @@ fun constructVTMPipeline(stopwords: Array<String>,
                          inputColName: String = "content",
                          isTest: Boolean = false): Pipeline {
 
-    val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
+    val indexer = StringIndexer().setInputCol("category").setOutputCol(LABEL_COL_NAME)
 
     val ngramPipline = constructNgrams(stopwords.toSet(), inputColName)
 
@@ -216,12 +218,12 @@ fun constructTagVtmDataPipeline(vocabSize: Int, inputColName: String = "labels")
 
 fun convertDataFrameToLabeledPoints(data: Dataset<Row>): JavaRDD<LabeledPoint> {
     val converter = IndexToString()
-            .setInputCol(labelIndexCol)
+            .setInputCol(LABEL_COL_NAME)
             .setOutputCol("originalCategory")
     val converted = converter.transform(data)
 
 
-    val featureData = converted.select(featureCol, labelIndexCol, "originalCategory")
+    val featureData = converted.select(FEATURE_COL_NAME, LABEL_COL_NAME, "originalCategory")
 
     val labeledDataPoints = featureData.toJavaRDD().map({ feature ->
         val features = feature.getAs<SparseVector>(0)

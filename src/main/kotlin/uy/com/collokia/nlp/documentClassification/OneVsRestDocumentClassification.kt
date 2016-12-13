@@ -17,6 +17,9 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import scala.Tuple2
 import uy.com.collokia.common.utils.deleteIfExists
+import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
+import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
+import uy.com.collokia.common.utils.machineLearning.PREDICTION_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
@@ -80,7 +83,7 @@ fun generateVTM(corpus: Dataset<Row>,
     val vtm = vtmModel.transform(parsedCorpus).drop(lemmatizedContentCol + "_" + ngramOutputCol,
             lemmatizedContentCol + "_" + cvModelOutputCol)
 
-    val indexer = StringIndexer().setInputCol("category").setOutputCol(labelIndexCol)
+    val indexer = StringIndexer().setInputCol("category").setOutputCol(LABEL_COL_NAME)
 
     val indexerModel = indexer.fit(vtm)
 
@@ -142,7 +145,7 @@ fun generateVTM(corpus: Dataset<Row>,
     val assembler = VectorAssembler().setInputCols(arrayOf(contentScaler.outputCol,
             titleNormalizer.outputCol,
             tagNormalizer.outputCol))
-            .setOutputCol(featureCol)
+            .setOutputCol(FEATURE_COL_NAME)
 
     val dataset = assembler.transform(fullParsedCorpus).drop(contentScaler.outputCol, titleNormalizer.outputCol, tagNormalizer.outputCol)
 
@@ -180,8 +183,8 @@ fun evaluateModel10Fold(pipeline: Pipeline, corpus: Dataset<Row>) {
     val paramGrid = ParamGridBuilder().build() // No parameter search
 
     val evaluator = MulticlassClassificationEvaluator()
-            .setLabelCol(labelIndexCol)
-            .setPredictionCol(predictionCol)
+            .setLabelCol(LABEL_COL_NAME)
+            .setPredictionCol(PREDICTION_COL_NAME)
             // "f1", "precision", "recall", "weightedPrecision", "weightedRecall"
             .setMetricName("f1")
 
