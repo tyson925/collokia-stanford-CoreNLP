@@ -14,58 +14,102 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import java.io.Serializable
 
 const val lemmatizedContentCol = "lemmatizedContent"
+private const val englishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+private const val spanishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 
-class MateLemmatizer : Transformer {
+class MateLemmatizer : Transformer, Serializable {
+
 
     val lemmatizerWrapper: LematizerWrapper
     var inputColName: String
     var outputColName: String
     val sparkSession: SparkSession
     val isRaw: Boolean
-
+    val isRawInput: Boolean
+    var isEnglish: Boolean
+    val udfName = "lemmatizer"
 
     constructor(sparkSession: SparkSession,
                 isRaw: Boolean,
-                lemmatizerModel: String = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model",
+                isRawInput: Boolean,
+                isEnglish: Boolean = true,
                 inputColName: String = tokenizedContent,
                 outputColName: String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
         this.isRaw = isRaw
-
+        this.isRawInput = isRawInput
+        this.isEnglish = isEnglish
+        val lemmatizerModel = if (isEnglish) englishLemmatizerModelName else spanishLemmatizerModelName
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 
         this.inputColName = inputColName
         this.outputColName = outputColName
+        if (isRawInput) {
+            val rawLemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
 
-        val lemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
+                val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
 
-            val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
+                sentenceArray[0] = "<root>"
 
-            sentenceArray[0] = "<root>"
+                (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
 
-            (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
+                val lemmatized = SentenceData09()
+                lemmatized.init(sentenceArray)
 
-            val lemmatized = SentenceData09()
-            lemmatized.init(sentenceArray)
+                if (this.isRaw) {
+                    lemmatizerWrapper.get().apply(lemmatized).plemmas.joinToString(" ")
+                } else {
+                    lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                }
+            })
 
             if (isRaw) {
-                lemmatizerWrapper.get().apply(lemmatized).plemmas.joinToString(" ")
+                sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.StringType)
             } else {
-                lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.createArrayType(DataTypes.StringType))
             }
-        })
-
-        if (isRaw) {
-            sparkSession.udf().register("lemmatizer", lemmatizer, DataTypes.StringType)
         } else {
-            sparkSession.udf().register("lemmatizer", lemmatizer, DataTypes.createArrayType(DataTypes.StringType))
-        }
+            val lemmatizer = org.apache.spark.sql.api.java.UDF1({ sentences: scala.collection.mutable.WrappedArray<scala.collection.mutable.WrappedArray<String>> ->
+                //val strings = Array(4) { "n = $it" }
 
+                val results = arrayOfNulls<Array<Array<String>>>(sentences.size())
+                (0..sentences.size() - 1).forEach { sentenceNum ->
+                    val tokens = sentences.apply(sentenceNum)
+
+                    val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
+
+                    sentenceArray[0] = "<root>"
+
+                    (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
+
+                    val lemmatized = SentenceData09()
+                    lemmatized.init(sentenceArray)
+                    this.lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                    val lemmas = lemmatized.plemmas
+
+                    val lemmatizedValues = sentenceArray.mapIndexed  { tokenIndex, token ->
+                        val strings = Array(2) { "n = $it" }
+                        strings[0] = token ?: ""
+                        strings[1] = lemmas[tokenIndex]
+                        strings
+                    }.toTypedArray()
+
+                    results[sentenceNum] = lemmatizedValues
+                }
+                results
+            })
+
+            sparkSession.udf().register(udfName, lemmatizer, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+        }
     }
+
+
+
 
     fun setInputColName(inputColName: String): MateLemmatizer {
         this.inputColName = inputColName
@@ -82,7 +126,7 @@ class MateLemmatizer : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(this.sparkSession, this.isRaw, this.inputColName, this.outputColName)
+        return MateLemmatizer(sparkSession, isRaw, isEnglish, isRawInput, inputColName, outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
@@ -90,7 +134,7 @@ class MateLemmatizer : Transformer {
         val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
 
         return dataset?.select(dataset.col("*"),
-                functions.callUDF("lemmatizer", JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+                functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
     }
 
     override fun transformSchema(schema: StructType?): StructType {

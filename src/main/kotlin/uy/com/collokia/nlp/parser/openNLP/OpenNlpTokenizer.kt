@@ -13,39 +13,61 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import java.io.Serializable
 
 const val tokenizedContent = "tokenizedContent"
+private const val englishSentenceDetectorModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin"
+private const val spanishSentenceDetectorModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/es-sent.bin"
+private const val englishTokenizerModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"
+private const val spanishTokenizerModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/es-token.bin"
 
-class OpenNlpTokenizer  : Transformer {
+class OpenNlpTokenizer : Transformer, Serializable {
 
-    var tokenizerWrapper : OpenNlpTokenizerWrapper
-    var sdetectorWrapper : OpenNlpSentenceDetectorWrapper
+
+    var tokenizerWrapper: OpenNlpTokenizerWrapper
+    var sdetectorWrapper: OpenNlpSentenceDetectorWrapper
     var sparkSession: SparkSession
-    var inputColName : String
-    var outputColName : String
+    var inputColName: String
+    var outputColName: String
+    val udfName = "tokenizer"
+    val isEnglish: Boolean
+    var isRaw: Boolean
 
-    constructor(sparkSession: SparkSession,
-            sentenceDetectorModelName : String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin",
-            tokenizerModelName: String = "./../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"){
-
-        sdetectorWrapper = OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
-        tokenizerWrapper = OpenNlpTokenizerWrapper(tokenizerModelName)
+    constructor(sparkSession: SparkSession, inputColName: String = "content", isEnglish: Boolean = true, isRaw: Boolean = true
+            //sentenceDetectorModelName : String = englishSentenceDetectorModelName,
+            //tokenizerModelName: String = englishTokenizerModelName
+    ) {
+        this.isEnglish = isEnglish
+        sdetectorWrapper = if (isEnglish) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName) else OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
+        tokenizerWrapper = if (isEnglish) OpenNlpTokenizerWrapper(englishTokenizerModelName) else OpenNlpTokenizerWrapper(spanishTokenizerModelName)
+        this.isRaw = isRaw
         this.sparkSession = sparkSession
-        this.inputColName = "content"
+        this.inputColName = inputColName
         this.outputColName = tokenizedContent
 
-        val tokenizer = UDF1{ content : String ->
-            val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
-                tokenizerWrapper.get().tokenize(sentence).toList()
+        if (isRaw) {
+            val tokenizer = UDF1 { content: String ->
+                val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
+                    tokenizerWrapper.get().tokenize(sentence).toList()
+                }
+                tokenizedText
             }
-            tokenizedText
-        }
 
-        sparkSession.udf().register("tokenizer",tokenizer,DataTypes.createArrayType(DataTypes.StringType))
+            sparkSession.udf().register(udfName, tokenizer, DataTypes.createArrayType(DataTypes.StringType))
+        } else {
+            val tokenizer = UDF1 { content: String ->
+                val tokenizedText = sdetectorWrapper.get().sentDetect(content).map { sentence ->
+                    tokenizerWrapper.get().tokenize(sentence).toList()
+                }
+                tokenizedText
+            }
+
+            sparkSession.udf().register(udfName, tokenizer, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType)))
+        }
 
     }
 
-    fun setInputColName(inputColName : String) : OpenNlpTokenizer {
+    fun setInputColName(inputColName: String): OpenNlpTokenizer {
         this.inputColName = inputColName
         return this
     }
@@ -55,14 +77,14 @@ class OpenNlpTokenizer  : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return OpenNlpTokenizer(sparkSession)
+        return OpenNlpTokenizer(sparkSession, inputColName, isEnglish, isRaw)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
         //dataset?.show(10,false)
 
         return dataset?.select(dataset.col("*"),
-                functions.callUDF("tokenizer",JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+                functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
 
     }
 
@@ -71,10 +93,10 @@ class OpenNlpTokenizer  : Transformer {
         val inputTypeMetaData = inputType?.metadata()
         //val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
 
-        if (inputTypeMetaData is DataTypes){
+        if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")
         }
-        return SchemaUtils.appendColumn(schema, outputColName,DataTypes.createArrayType(DataTypes.StringType),inputType?.nullable() ?: false)
+        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
     }
 
 }

@@ -14,22 +14,30 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import java.io.Serializable
 
+private const val englishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+private const val spanishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
 
-class MateTagger : Transformer {
+class MateTagger : Transformer, Serializable {
 
     val taggerWrapper: TaggerWrapper
     var inputColName: String
     var outputColName: String
     val sparkSession: SparkSession
+    val udfName = "tagger"
+    val isEnglish: Boolean
 
-    constructor(sparkSession: SparkSession,
-                taggerModelName: String = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model") {
+
+    constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent) {
+
+        this.isEnglish = isEnglish
 
         this.sparkSession = sparkSession
-        taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
-        inputColName = tokenizedContent
-        outputColName = "taggedContent"
+        val modelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
+        taggerWrapper = TaggerWrapper(arrayOf("-model", modelName))
+        this.inputColName = inputColName
+        this.outputColName = "taggedContent"
 
         val tagger = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
 
@@ -42,11 +50,12 @@ class MateTagger : Transformer {
             val lemmatized = SentenceData09()
 
             lemmatized.lemmas = sentenceArray
-
         })
 
-        this.sparkSession.udf().register("tagger", tagger, DataTypes.StringType)
+        this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.StringType))
     }
+
+
 
     fun setInputColName(inputColName: String): MateTagger {
         this.inputColName = inputColName
@@ -63,13 +72,13 @@ class MateTagger : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateTagger(sparkSession)
+        return MateTagger(sparkSession, isEnglish)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
 
         return dataset?.select(dataset.col("*"),
-                functions.callUDF("tagger", JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+                functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
     }
 
     override fun transformSchema(schema: StructType?): StructType {
