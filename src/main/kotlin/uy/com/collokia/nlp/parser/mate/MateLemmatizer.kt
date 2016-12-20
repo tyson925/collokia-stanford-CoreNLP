@@ -17,8 +17,8 @@ import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
 const val lemmatizedContentCol = "lemmatizedContent"
-private const val englishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
-private const val spanishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val englishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val spanishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 
 class MateLemmatizer : Transformer, Serializable {
 
@@ -76,7 +76,7 @@ class MateLemmatizer : Transformer, Serializable {
         } else {
             val lemmatizer = org.apache.spark.sql.api.java.UDF1({ sentences: scala.collection.mutable.WrappedArray<scala.collection.mutable.WrappedArray<String>> ->
                 //val strings = Array(4) { "n = $it" }
-
+sentences
                 val results = arrayOfNulls<Array<Array<String>>>(sentences.size())
                 (0..sentences.size() - 1).forEach { sentenceNum ->
                     val tokens = sentences.apply(sentenceNum)
@@ -92,7 +92,7 @@ class MateLemmatizer : Transformer, Serializable {
                     this.lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
                     val lemmas = lemmatized.plemmas
 
-                    val lemmatizedValues = sentenceArray.mapIndexed  { tokenIndex, token ->
+                    val lemmatizedValues = sentenceArray.mapIndexed { tokenIndex, token ->
                         val strings = Array(2) { "n = $it" }
                         strings[0] = token ?: ""
                         strings[1] = lemmas[tokenIndex]
@@ -107,8 +107,6 @@ class MateLemmatizer : Transformer, Serializable {
             sparkSession.udf().register(udfName, lemmatizer, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
         }
     }
-
-
 
 
     fun setInputColName(inputColName: String): MateLemmatizer {

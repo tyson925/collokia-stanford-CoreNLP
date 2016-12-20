@@ -16,11 +16,12 @@ import scala.collection.JavaConversions
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
-private const val englishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-private const val spanishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val englishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val spanishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
 
 class MateTagger : Transformer, Serializable {
 
+    val lemmatizerWrapper: LematizerWrapper
     val taggerWrapper: TaggerWrapper
     var inputColName: String
     var outputColName: String
@@ -32,27 +33,51 @@ class MateTagger : Transformer, Serializable {
     constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent) {
 
         this.isEnglish = isEnglish
-
         this.sparkSession = sparkSession
-        val modelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
-        taggerWrapper = TaggerWrapper(arrayOf("-model", modelName))
+
+        val lemmatizerModel = if (isEnglish) englishLemmatizerModelName else spanishLemmatizerModelName
+        val options = arrayOf("-model", lemmatizerModel)
+        lemmatizerWrapper = LematizerWrapper(options)
+
+        val taggerModelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
+        taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
         this.inputColName = inputColName
         this.outputColName = "taggedContent"
 
-        val tagger = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
+        val tagger = org.apache.spark.sql.api.java.UDF1({ sentences: scala.collection.mutable.WrappedArray<scala.collection.mutable.WrappedArray<String>> ->
 
-            val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
+            val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
+            val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)
+            sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
-            sentenceArray[0] = "<root>"
+                val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
 
-            (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
+                sentenceArray[0] = "<root>"
 
-            val lemmatized = SentenceData09()
+                (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
 
-            lemmatized.lemmas = sentenceArray
+                val lemmatized = SentenceData09()
+                lemmatized.init(sentenceArray)
+                this.lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                val lemmas = lemmatized.plemmas
+
+                var tagged = taggerWrapper.get()!!.tag(lemmatized)
+                val posses = tagged.ppos
+
+                val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
+                    val strings = Array(3) { "n = $it" }
+                    strings[0] = token ?: ""
+                    strings[1] = lemmas[tokenIndex]
+                    strings[2] = posses[tokenIndex]
+                    strings
+                }.toTypedArray()
+
+                results[sentenceNum] = taggedValues
+            }
+            results
         })
 
-        this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.StringType))
+        this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
     }
 
 
