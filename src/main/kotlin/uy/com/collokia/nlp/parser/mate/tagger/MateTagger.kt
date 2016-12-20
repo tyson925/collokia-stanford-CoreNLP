@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package uy.com.collokia.nlp.parser.mate
+package uy.com.collokia.nlp.parser.mate.tagger
 
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
@@ -9,10 +9,16 @@ import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.mate.tagger.TaggerWrapper
+import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
+import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
+import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
@@ -44,7 +50,7 @@ class MateTagger : Transformer, Serializable {
         this.inputColName = inputColName
         this.outputColName = "taggedContent"
 
-        val tagger = org.apache.spark.sql.api.java.UDF1({ sentences: scala.collection.mutable.WrappedArray<scala.collection.mutable.WrappedArray<String>> ->
+        val tagger = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
             val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)

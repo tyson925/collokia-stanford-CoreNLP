@@ -1,4 +1,4 @@
-package uy.com.collokia.nlp.parser.mate
+package uy.com.collokia.nlp.parser.mate.tagger
 
 import is2.tag.Options
 import is2.tag.Tagger

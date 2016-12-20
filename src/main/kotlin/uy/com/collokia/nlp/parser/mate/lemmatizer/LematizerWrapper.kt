@@ -1,5 +1,5 @@
 
-package uy.com.collokia.nlp.parser.mate
+package uy.com.collokia.nlp.parser.mate.lemmatizer
 
 import is2.lemmatizer.Lemmatizer
 import is2.lemmatizer.Options

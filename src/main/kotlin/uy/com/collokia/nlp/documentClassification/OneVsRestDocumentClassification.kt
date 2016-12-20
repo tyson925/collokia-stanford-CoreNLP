@@ -23,7 +23,7 @@ import uy.com.collokia.common.utils.machineLearning.PREDICTION_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
-import uy.com.collokia.nlp.parser.mate.lemmatizedContentCol
+import uy.com.collokia.nlp.parser.mate.lemmatizer.lemmatizedContentCol
 import uy.com.collokia.nlp.transformer.ngram.OwnNGram
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"

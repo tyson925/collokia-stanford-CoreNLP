@@ -1,4 +1,4 @@
-package uy.com.collokia.nlp.parser.mate
+package uy.com.collokia.nlp.parser.mate.parser
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap

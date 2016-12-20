@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package uy.com.collokia.nlp.parser.mate
+package uy.com.collokia.nlp.parser.mate.lemmatizer
 
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
@@ -9,10 +9,13 @@ import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
@@ -50,7 +53,7 @@ class MateLemmatizer : Transformer, Serializable {
         this.inputColName = inputColName
         this.outputColName = outputColName
         if (isRawInput) {
-            val rawLemmatizer = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
+            val rawLemmatizer = UDF1({ tokens: WrappedArray<String> ->
 
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
 
@@ -74,7 +77,7 @@ class MateLemmatizer : Transformer, Serializable {
                 sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.createArrayType(DataTypes.StringType))
             }
         } else {
-            val lemmatizer = org.apache.spark.sql.api.java.UDF1({ sentences: scala.collection.mutable.WrappedArray<scala.collection.mutable.WrappedArray<String>> ->
+            val lemmatizer = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
                 //val strings = Array(4) { "n = $it" }
 sentences
                 val results = arrayOfNulls<Array<Array<String>>>(sentences.size())
