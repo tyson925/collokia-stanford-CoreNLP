@@ -15,7 +15,6 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.nlp.parser.mate.tagger.TaggerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
@@ -85,7 +84,6 @@ class MateTagger : Transformer, Serializable {
 
         this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
     }
-
 
 
     fun setInputColName(inputColName: String): MateTagger {
