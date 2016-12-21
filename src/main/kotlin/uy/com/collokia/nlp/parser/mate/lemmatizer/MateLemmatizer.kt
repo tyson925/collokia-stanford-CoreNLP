@@ -19,8 +19,8 @@ import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
 const val lemmatizedContentCol = "lemmatizedContent"
-const val englishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
-const val spanishLemmatizerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val englishLemmatizerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val spanishLemmatizerModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 
 class MateLemmatizer : Transformer, Serializable {
 

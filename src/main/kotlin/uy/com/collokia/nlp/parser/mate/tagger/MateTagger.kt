@@ -21,8 +21,8 @@ import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
-const val englishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-const val spanishTaggerModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val englishTaggerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
 
 class MateTagger : Transformer, Serializable {
 

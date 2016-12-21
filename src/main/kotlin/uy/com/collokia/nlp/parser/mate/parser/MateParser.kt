@@ -21,8 +21,8 @@ import uy.com.collokia.nlp.parser.mate.tagger.englishTaggerModelName
 import uy.com.collokia.nlp.parser.mate.tagger.spanishTaggerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
-const val englishParserModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
-const val spanishParsedModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val spanishParsedModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
 
 class MateParser : Transformer {
 
