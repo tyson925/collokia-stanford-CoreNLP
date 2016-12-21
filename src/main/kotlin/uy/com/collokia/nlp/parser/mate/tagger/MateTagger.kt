@@ -49,10 +49,15 @@ class MateTagger : Transformer, Serializable {
         this.inputColName = inputColName
         this.outputColName = "taggedContent"
 
+
         val tagger = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
+            val lemmatizer = lemmatizerWrapper.get()
+            val posTagger = taggerWrapper.get()
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
             val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)
+
+
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
@@ -63,18 +68,14 @@ class MateTagger : Transformer, Serializable {
 
                 val lemmatized = SentenceData09()
                 lemmatized.init(sentenceArray)
-                this.lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                lemmatizer.apply(lemmatized).plemmas.toList()
                 val lemmas = lemmatized.plemmas
 
-                var tagged = taggerWrapper.get()!!.tag(lemmatized)
+                var tagged = posTagger.tag(lemmatized)
                 val posses = tagged.ppos
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    val strings = Array(3) { "n = $it" }
-                    strings[0] = token ?: ""
-                    strings[1] = lemmas[tokenIndex]
-                    strings[2] = posses[tokenIndex]
-                    strings
+                    arrayOf(token ?: "",lemmas[tokenIndex],posses[tokenIndex])
                 }.toTypedArray()
 
                 results[sentenceNum] = taggedValues

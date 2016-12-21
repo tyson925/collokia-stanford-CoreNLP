@@ -8,14 +8,13 @@ class TaggerWrapper(private val props : Array<String>) : Serializable {
 
     @Transient private var tagger: Tagger? = null
 
-    fun get() : Tagger? {
-
+    fun get() : Tagger {
         return if (tagger == null) {
             val optsTagger = Options(props)
             tagger = Tagger(optsTagger)
-            tagger
+            tagger!!
         } else {
-            tagger
+            tagger!!
         }
     }
 

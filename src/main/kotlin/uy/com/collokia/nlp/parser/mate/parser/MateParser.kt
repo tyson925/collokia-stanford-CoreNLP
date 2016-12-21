@@ -21,8 +21,8 @@ import uy.com.collokia.nlp.parser.mate.tagger.englishTaggerModelName
 import uy.com.collokia.nlp.parser.mate.tagger.spanishTaggerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
-const val englishParserModelName = "./NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
-const val spanishParsedModelName = "./NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val englishParserModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val spanishParsedModelName = "./../MLyBigData/NLPUtils/data/mate/models/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
 
 class MateParser : Transformer {
 
@@ -52,12 +52,14 @@ class MateParser : Transformer {
         this.outputColName = "taggedContent"
         this.isEnglish = isEnglish
 
-        val parser = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
+
+
+        val parserUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 80 }
             val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)
             val lemmatizer = lemmatizerWrapper.get()
-            val posTagger = taggerWrapper.get()!!
-            val parser = parserWrapper.get()!!
+            val posTagger = taggerWrapper.get()
+            val parser = parserWrapper.get()
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
@@ -79,20 +81,13 @@ class MateParser : Transformer {
                 val parses = parsed.plabels
                 val pheads = parsed.pheads
 
-
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    val strings = arrayOf((token ?: ""),
-                        lemmas[tokenIndex] ?: "",
-                        posses[tokenIndex] ?: "",
-                        parses[tokenIndex] ?: "",
-                        pheads[tokenIndex]?.toString() ?: "")
-
-                    //strings[0] = (token ?: "")
-                    //strings[1] = lemmas[tokenIndex] ?: ""
-                    //strings[2] = posses[tokenIndex] ?: ""
-                    //strings[3] = parses[tokenIndex] ?: ""
-                    //strings[4] = pheads[tokenIndex]?.toString() ?: ""
-                    strings
+                    val parserIndex = if (tokenIndex - 1 < 0) 0 else tokenIndex - 1
+                    arrayOf((token ?: ""),
+                            lemmas[tokenIndex] ?: "",
+                            posses[tokenIndex] ?: "",
+                            parses[parserIndex] ?: "",
+                            pheads[parserIndex]?.toString() ?: "")
                 }.toTypedArray()
 
                 results[sentenceNum] = taggedValues
@@ -100,7 +95,7 @@ class MateParser : Transformer {
             results
         })
 
-        sparkSession.udf().register(udfName, parser, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+        sparkSession.udf().register(udfName, parserUDF, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
 
     }
 
@@ -119,7 +114,7 @@ class MateParser : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateParser(sparkSession,isEnglish,inputColName)
+        return MateParser(sparkSession, isEnglish, inputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

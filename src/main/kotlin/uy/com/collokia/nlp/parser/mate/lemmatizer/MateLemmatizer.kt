@@ -15,7 +15,6 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
@@ -52,9 +51,12 @@ class MateLemmatizer : Transformer, Serializable {
 
         this.inputColName = inputColName
         this.outputColName = outputColName
+
+
+
         if (isRawInput) {
             val rawLemmatizer = UDF1({ tokens: WrappedArray<String> ->
-
+                val lemmatizer = lemmatizerWrapper.get()
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
 
                 sentenceArray[0] = "<root>"
@@ -65,9 +67,9 @@ class MateLemmatizer : Transformer, Serializable {
                 lemmatized.init(sentenceArray)
 
                 if (this.isRaw) {
-                    lemmatizerWrapper.get().apply(lemmatized).plemmas.joinToString(" ")
+                    lemmatizer.apply(lemmatized).plemmas.joinToString(" ")
                 } else {
-                    lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                    lemmatizer.apply(lemmatized).plemmas.toList()
                 }
             })
 
@@ -77,9 +79,8 @@ class MateLemmatizer : Transformer, Serializable {
                 sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.createArrayType(DataTypes.StringType))
             }
         } else {
-            val lemmatizer = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
-                //val strings = Array(4) { "n = $it" }
-sentences
+            val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
+                val lemmatizer = lemmatizerWrapper.get()
                 val results = arrayOfNulls<Array<Array<String>>>(sentences.size())
                 (0..sentences.size() - 1).forEach { sentenceNum ->
                     val tokens = sentences.apply(sentenceNum)
@@ -92,14 +93,11 @@ sentences
 
                     val lemmatized = SentenceData09()
                     lemmatized.init(sentenceArray)
-                    this.lemmatizerWrapper.get().apply(lemmatized).plemmas.toList()
+                    lemmatizer.apply(lemmatized)
                     val lemmas = lemmatized.plemmas
 
                     val lemmatizedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                        val strings = Array(2) { "n = $it" }
-                        strings[0] = token ?: ""
-                        strings[1] = lemmas[tokenIndex]
-                        strings
+                        arrayOf(token ?: "",lemmas[tokenIndex])
                     }.toTypedArray()
 
                     results[sentenceNum] = lemmatizedValues
@@ -107,7 +105,7 @@ sentences
                 results
             })
 
-            sparkSession.udf().register(udfName, lemmatizer, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+            sparkSession.udf().register(udfName, lemmatizerUDF, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
         }
     }
 
