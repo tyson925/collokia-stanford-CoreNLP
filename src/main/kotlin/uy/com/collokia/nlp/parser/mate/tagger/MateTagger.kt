@@ -22,7 +22,7 @@ import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 
 const val englishTaggerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
 
 class MateTagger : Transformer, Serializable {
 

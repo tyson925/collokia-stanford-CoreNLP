@@ -22,7 +22,7 @@ import uy.com.collokia.nlp.parser.mate.tagger.spanishTaggerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
 const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
-const val spanishParsedModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val spanishParsedModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
 
 class MateParser : Transformer {
 

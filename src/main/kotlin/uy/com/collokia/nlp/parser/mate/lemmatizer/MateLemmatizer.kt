@@ -20,7 +20,7 @@ import java.io.Serializable
 
 const val lemmatizedContentCol = "lemmatizedContent"
 const val englishLemmatizerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
-const val spanishLemmatizerModelName = "./data/mate/models/spanish/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val spanishLemmatizerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
 
 class MateLemmatizer : Transformer, Serializable {
 
