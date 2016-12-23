@@ -37,12 +37,13 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
         val RET: MutableList<String>
 
         if (N < 2) {
-            val candidatePOSs = tokens.map { token -> token.apply(1) }
+            RET = tokens.filter { token -> filterCandidate(listOf(token.apply(2))) }.map { token -> token.apply(1) }.toMutableList()
+            /*val candidatePOSs = tokens.map { token -> token.apply(2) }
             if (filterCandidate(candidatePOSs)) {
                 RET = tokens.map { token -> token.apply(1) }.toMutableList()
             } else {
                 RET = mutableListOf<String>()
-            }
+            }*/
         } else {
             RET = mutableListOf<String>()
             for (i in 0..tokens.size - N + 1 - 1) {
@@ -65,7 +66,7 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
     }
 
     private fun filterCandidate(candidatePOSs: List<String>): Boolean {
-        val filteredPOSs = candidatePOSs.filter { pos -> if (pos == "NN" || pos == "ADJ" || pos == "VERB") true else false }
+        val filteredPOSs = candidatePOSs.filter { pos -> if (pos.startsWith("NN") || pos == "ADJ" || pos.startsWith("V")) true else false }
         return if (filteredPOSs.size == candidatePOSs.size) true else false
     }
 

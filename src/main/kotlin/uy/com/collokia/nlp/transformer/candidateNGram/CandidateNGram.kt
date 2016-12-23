@@ -9,9 +9,8 @@ import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram>() {
 
     override fun createTransformFunc(): Function1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>> {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return ExtractFunction()
     }
-
 
     override fun outputDataType(): DataType? {
         return DataTypes.createArrayType(DataTypes.StringType)
