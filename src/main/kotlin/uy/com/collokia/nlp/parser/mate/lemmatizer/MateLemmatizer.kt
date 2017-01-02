@@ -12,15 +12,23 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
+import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
+import java.util.*
 
 const val lemmatizedContentCol = "lemmatizedContent"
 const val englishLemmatizerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 const val spanishLemmatizerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
+
+data class LemmatizedToken(var token: String, var lemma: String) : Serializable
+
+data class LemmatizedSentence(var lemmatizedSentence: List<LemmatizedToken>) : Serializable
+
+data class LemmatizedContent(var lemmatizedContent : List<LemmatizedSentence>) : Serializable
 
 class MateLemmatizer : Transformer, Serializable {
 
@@ -52,8 +60,6 @@ class MateLemmatizer : Transformer, Serializable {
         this.inputColName = inputColName
         this.outputColName = outputColName
 
-
-
         if (isRawInput) {
             val rawLemmatizer = UDF1({ tokens: WrappedArray<String> ->
                 val lemmatizer = lemmatizerWrapper.get()
@@ -81,7 +87,8 @@ class MateLemmatizer : Transformer, Serializable {
         } else {
             val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
                 val lemmatizer = lemmatizerWrapper.get()
-                val results = arrayOfNulls<Array<Array<String>>>(sentences.size())
+                //val results = arrayOfNulls<Array<Row>>(sentences.size())
+                val results = ArrayList<Array<Array<String>>>(sentences.size())
                 (0..sentences.size() - 1).forEach { sentenceNum ->
                     val tokens = sentences.apply(sentenceNum)
 
@@ -96,16 +103,20 @@ class MateLemmatizer : Transformer, Serializable {
                     lemmatizer.apply(lemmatized)
                     val lemmas = lemmatized.plemmas
 
-                    val lemmatizedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                        arrayOf(token ?: "",lemmas[tokenIndex])
+                    val lemmatizedTokens = sentenceArray.mapIndexed { tokenIndex, token ->
+                        arrayOf(token ?: "", lemmas[tokenIndex])
+                        //RowFactory.create(token ?: "", lemmas[tokenIndex])
+                        //LemmatizedToken(token ?: "", lemmas[tokenIndex])
                     }.toTypedArray()
 
-                    results[sentenceNum] = lemmatizedValues
+                    results.add(sentenceNum,lemmatizedTokens)
                 }
                 results
             })
+            val outputType = outputType(false)
 
             sparkSession.udf().register(udfName, lemmatizerUDF, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+            //sparkSession.udf().register(udfName, lemmatizerUDF, outputType.dataType())
         }
     }
 
@@ -144,7 +155,22 @@ class MateLemmatizer : Transformer, Serializable {
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")
         }
-        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
+        val nullable = inputType?.nullable() ?: false
+        val output = outputType(nullable)
+        return SchemaUtils.appendColumn(schema, output)
+    }
+
+    private fun outputType(nullable: Boolean): StructField {
+        val token = DataTypes.createStructField("token", DataTypes.StringType, nullable)
+        val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, nullable)
+        val output = DataTypes.createStructField(outputColName, DataTypes.createArrayType(DataTypes.createStructType(listOf(token, lemma))), nullable)
+        return output
+    }
+
+    private fun outputType(schema: StructType?): StructField {
+        val inputType = schema?.apply(schema.fieldIndex(inputColName))
+        val nullable = inputType?.nullable() ?: false
+        return outputType(nullable)
     }
 
 

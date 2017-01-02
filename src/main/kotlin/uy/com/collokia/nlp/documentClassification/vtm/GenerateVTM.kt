@@ -3,9 +3,6 @@
 package uy.com.collokia.nlp.documentClassification.vtm
 
 
-//import org.apache.spark.mllib.linalg.SparseVector
-//import org.apache.spark.mllib.regression.LabeledPoint
-//import org.apache.spark.ml.regression.LabeledPoint
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.broadcast.Broadcast

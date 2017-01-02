@@ -23,6 +23,7 @@ import java.io.Serializable
 
 const val englishTaggerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
 const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
+const val taggerOutputColName = "taggedContent"
 
 class MateTagger : Transformer, Serializable {
 
@@ -35,7 +36,7 @@ class MateTagger : Transformer, Serializable {
     val isEnglish: Boolean
 
 
-    constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent) {
+    constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent, outputColName: String = taggerOutputColName) {
 
         this.isEnglish = isEnglish
         this.sparkSession = sparkSession
@@ -47,7 +48,7 @@ class MateTagger : Transformer, Serializable {
         val taggerModelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
         taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
         this.inputColName = inputColName
-        this.outputColName = "taggedContent"
+        this.outputColName = outputColName
 
 
         val tagger = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
@@ -75,7 +76,7 @@ class MateTagger : Transformer, Serializable {
                 val posses = tagged.ppos
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    arrayOf(token ?: "",lemmas[tokenIndex],posses[tokenIndex])
+                    arrayOf(token ?: "", lemmas[tokenIndex], posses[tokenIndex])
                 }.toTypedArray()
 
                 results[sentenceNum] = taggedValues
@@ -119,7 +120,13 @@ class MateTagger : Transformer, Serializable {
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")
         }
-        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
+        val nullable = inputType?.nullable() ?: false
+
+        val token = DataTypes.createStructField("token", DataTypes.StringType, nullable)
+        val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, nullable)
+        val posTag = DataTypes.createStructField("posTag", DataTypes.StringType, nullable)
+        val output = DataTypes.createStructField(outputColName, DataTypes.createArrayType(DataTypes.createStructType(listOf(token, lemma, posTag))), nullable)
+        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), nullable)
     }
 
 }
