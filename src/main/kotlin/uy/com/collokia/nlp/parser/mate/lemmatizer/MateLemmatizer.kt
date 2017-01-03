@@ -89,7 +89,9 @@ class MateLemmatizer : Transformer, Serializable {
                 val lemmatizer = lemmatizerWrapper.get()
                 //val results = arrayOfNulls<Array<Row>>(sentences.size())
                 val results = ArrayList<Array<Array<String>>>(sentences.size())
+
                 (0..sentences.size() - 1).forEach { sentenceNum ->
+
                     val tokens = sentences.apply(sentenceNum)
 
                     val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"

@@ -20,9 +20,19 @@ import uy.com.collokia.nlp.parser.mate.tagger.TaggerWrapper
 import uy.com.collokia.nlp.parser.mate.tagger.englishTaggerModelName
 import uy.com.collokia.nlp.parser.mate.tagger.spanishTaggerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import java.io.Serializable
+import java.util.*
 
-const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+//const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
+const val englishParserModelName = "./data/mate/models/english/stanford.model"
 const val spanishParsedModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
+
+data class ParsedToken(var token: String, var lemma: String, var posTag : String,var parse : String,var head : Int) : Serializable
+
+data class ParsedSentence(var parsedSentence: List<ParsedToken>) : Serializable
+
+data class ParsedContent(var parsedContent : List<ParsedSentence>) : Serializable
+
 
 class MateParser : Transformer {
 
@@ -53,13 +63,14 @@ class MateParser : Transformer {
         this.isEnglish = isEnglish
 
 
-
         val parserUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
-            val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 80 }
-            val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)
             val lemmatizer = lemmatizerWrapper.get()
             val posTagger = taggerWrapper.get()
             val parser = parserWrapper.get()
+
+            val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 80 }
+            val results = ArrayList<Array<Array<String>>>(sentencesJava.size)
+
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
@@ -79,18 +90,21 @@ class MateParser : Transformer {
                 val parsed = parser.apply(tagged)
 
                 val parses = parsed.plabels
-                val pheads = parsed.pheads
+                val heads = parsed.pheads
+
+
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    val parserIndex = if (tokenIndex - 1 < 0) 0 else tokenIndex - 1
-                    arrayOf((token ?: ""),
+                    val parserIndex = tokenIndex - 1
+                    arrayOf(
+                            token ?: "",
                             lemmas[tokenIndex] ?: "",
                             posses[tokenIndex] ?: "",
-                            parses[parserIndex] ?: "",
-                            pheads[parserIndex]?.toString() ?: "")
+                            if (tokenIndex == 0 || tokenIndex > parses.size ) "root" else parses[tokenIndex -1] ?: "",
+                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex -1]?.toString() ?: "")
                 }.toTypedArray()
 
-                results[sentenceNum] = taggedValues
+                results.add(sentenceNum, taggedValues)
             }
             results
         })
@@ -132,6 +146,6 @@ class MateParser : Transformer {
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")
         }
-        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
+        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))), inputType?.nullable() ?: false)
     }
 }

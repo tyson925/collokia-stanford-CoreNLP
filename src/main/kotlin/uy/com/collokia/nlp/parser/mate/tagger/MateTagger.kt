@@ -66,7 +66,6 @@ class MateTagger : Transformer, Serializable {
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
             val results = ArrayList<Array<Array<String>>>(sentencesJava.size)
 
-
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"

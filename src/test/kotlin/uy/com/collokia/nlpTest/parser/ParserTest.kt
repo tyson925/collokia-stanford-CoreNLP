@@ -1,93 +1,59 @@
 package uy.com.collokia.nlpTest.parser
 
-import org.apache.spark.SparkConf
-import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.common.utils.elasticSearch.readSoContentFromEs
 import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedContent
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedSentence
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedToken
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
+import uy.com.collokia.nlp.parser.mate.parser.MateParser
+import uy.com.collokia.nlp.parser.mate.parser.ParsedContent
+import uy.com.collokia.nlp.parser.mate.parser.ParsedSentence
+import uy.com.collokia.nlp.parser.mate.parser.ParsedToken
 import uy.com.collokia.nlpTest.util.constructTestDataset
-import uy.com.collokia.nlpTest.util.lemmatizedIndexName
-import java.io.Serializable
+import uy.com.collokia.nlpTest.util.parsedIndexName
 
-data class TestData(val id: Int, val text: String) : Serializable
-
-class ParserTest : Serializable {
-
+class ParserTest() {
     companion object {
-
         @JvmStatic fun main(args: Array<String>) {
-
             val test = ParserTest()
-            test.readLemmatizedContentFromES()
+            test.writeParsedContentToES()
         }
     }
 
+    fun parserTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
-
-    fun lemmatizerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
-
-        val tagger = MateLemmatizer(sparkSession, isRawInput = false, isRaw = true)
-        val lemmatized = tagger.transform(testCorpus)?.toJavaRDD()?.map { row ->
+        val parser = MateParser(sparkSession)
+        val parsedContent = parser.transform(testCorpus)?.toJavaRDD()?.map { row ->
             println(row.schema())
             val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
-            LemmatizedContent(parsedSentences.map { sentence ->
+            ParsedContent(parsedSentences.map { sentence ->
 
-                LemmatizedSentence(JavaConversions.asJavaCollection(sentence).map { token ->
-                    LemmatizedToken(token.apply(0), token.apply(1))
+                ParsedSentence(JavaConversions.asJavaCollection(sentence).map { token ->
+                    ParsedToken(token.apply(0), token.apply(1), token.apply(2), token.apply(3), token.apply(4).toInt())
                 })
             })
         }
 
-
-        //println(lemmatized?.collect()?.joinToString("\n"))
-        val lemmatizedDataset = lemmatized?.convertRDDToDF(sparkSession)
-        JavaEsSparkSQL.saveToEs(lemmatizedDataset, "$lemmatizedIndexName/lemmatizedContent")
-        //lemmatized?.show(10, false)
+        val parsedDataset = parsedContent?.convertRDDToDF(sparkSession)
+        JavaEsSparkSQL.saveToEs(parsedDataset, "$parsedIndexName/parsedContent")
     }
 
-    fun writeLemmatizedContentToES() {
+    fun writeParsedContentToES() {
         val jsc = getLocalSparkContext("Test NLP parser", cores = 2)
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
         val testCorpus = constructTestDataset(jsc, sparkSession)
         testCorpus?.let {
-            lemmatizerTest(sparkSession, testCorpus)
+            parserTest(sparkSession, testCorpus)
         }
         closeSpark(jsc)
     }
 
-    fun readLemmatizedContentFromES() {
-        val sparkConf = SparkConf().setAppName("appName").setMaster("local[6]")
-                //.set("spark.sql.shuffle.partitions", "1")
-                .set("es.nodes", "localhost:9200")
-                .set("es.nodes.discovery", "true")
-                .set("es.nodes.wan.only", "false")
-                .set("spark.default.parallelism", "8")
-                .set("num-executors", "3")
-                .set("executor-cores", "4")
-                .set("executor-memory", "4G")
-                .set("es.read.field.as.array.include", "lemmatizedContent, lemmatizedContent.lemmatizedSentence")
-
-        val jsc = JavaSparkContext(sparkConf)
-
-        jsc.appName()
-
-        val sparkSession = getLocalSparkSession("ES test")
-        val documents = readSoContentFromEs(sparkSession, lemmatizedIndexName)
-        documents.show(10, false)
-
-    }
 }
+

@@ -6,12 +6,15 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import scala.Tuple2
 import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
-import uy.com.collokia.nlpTest.parser.TestData
+import java.io.Serializable
 import java.util.*
 
 
-const val lemmatizedIndexName = "lemmatized_test"
-const val taggedIndexName = "tagged_test"
+const val lemmatizedIndexName = "lemmatizer_test"
+const val taggedIndexName = "tagger_test"
+const val parsedIndexName = "parser_test"
+
+data class TestData(val id: Int, val text: String) : Serializable
 
 fun constructTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession): Dataset<Row>? {
     val test = LinkedList<Tuple2<Int, String>>()
