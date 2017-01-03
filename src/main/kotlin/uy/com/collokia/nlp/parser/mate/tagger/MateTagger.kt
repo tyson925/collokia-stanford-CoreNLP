@@ -20,10 +20,18 @@ import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
+import java.util.*
 
 const val englishTaggerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
 const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
 const val taggerOutputColName = "taggedContent"
+
+data class TaggedToken(var token: String, var lemma: String, var posTag : String) : Serializable
+
+data class TaggedSentence(var taggedSentence: List<TaggedToken>) : Serializable
+
+data class TaggedContent(var taggedContent : List<TaggedSentence>) : Serializable
+
 
 class MateTagger : Transformer, Serializable {
 
@@ -56,7 +64,7 @@ class MateTagger : Transformer, Serializable {
             val posTagger = taggerWrapper.get()
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
-            val results = arrayOfNulls<Array<Array<String>>>(sentencesJava.size)
+            val results = ArrayList<Array<Array<String>>>(sentencesJava.size)
 
 
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
@@ -79,7 +87,7 @@ class MateTagger : Transformer, Serializable {
                     arrayOf(token ?: "", lemmas[tokenIndex], posses[tokenIndex])
                 }.toTypedArray()
 
-                results[sentenceNum] = taggedValues
+                results.add(sentenceNum,taggedValues)
             }
             results
         })

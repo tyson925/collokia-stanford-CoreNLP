@@ -8,13 +8,16 @@ import java.io.Serializable
 import java.util.*
 
 class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>(), Serializable {
-    override fun apply(tokens: WrappedArray<WrappedArray<WrappedArray<String>>>?): Array<String> {
-        val sentences = JavaConversions.seqAsJavaList(tokens) ?: listOf()
+    override fun apply(tokens: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
+        val sentences = JavaConversions.seqAsJavaList(tokens)
+        println(sentences.javaClass.kotlin)
         return sentences.flatMap { sentence ->
+            println(sentence.javaClass.kotlin)
             wordNGrams(sentence, number_of_grams, true, " ")
         }.toTypedArray()
 
     }
+
 
     fun wordNGrams(sentence: WrappedArray<WrappedArray<String>>, N: Int, oneToN: Boolean, separator: String = "_"): List<String> {
         val RET = LinkedList<String>()
