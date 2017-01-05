@@ -21,8 +21,8 @@ import java.io.Serializable
 import java.util.*
 
 const val lemmatizedContentCol = "lemmatizedContent"
-const val englishLemmatizerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
-const val spanishLemmatizerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
+const val englishLemmatizerModelName = "mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+const val spanishLemmatizerModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
 
 data class LemmatizedToken(var token: String, var lemma: String) : Serializable
 

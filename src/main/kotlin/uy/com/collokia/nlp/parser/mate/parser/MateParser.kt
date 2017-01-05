@@ -24,8 +24,8 @@ import java.io.Serializable
 import java.util.*
 
 //const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
-const val englishParserModelName = "./data/mate/models/english/stanford.model"
-const val spanishParsedModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
+const val englishParserModelName = "mate/models/english/stanford.model"
+const val spanishParsedModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
 
 data class ParsedToken(var token: String, var lemma: String, var posTag : String,var parse : String,var head : Int) : Serializable
 

@@ -16,10 +16,10 @@ import scala.collection.JavaConversions
 import java.io.Serializable
 
 const val tokenizedContent = "tokenizedContent"
-private const val englishSentenceDetectorModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/en-sent.bin"
-private const val spanishSentenceDetectorModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/es-sent.bin"
-private const val englishTokenizerModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/en-token.bin"
-private const val spanishTokenizerModelName = "./../MLyBigData/NLPUtils/data/opennlp/models/es-token.bin"
+private const val englishSentenceDetectorModelName = "opennlp/models/en-sent.bin"
+private const val spanishSentenceDetectorModelName = "opennlp/models/es-sent.bin"
+private const val englishTokenizerModelName = "opennlp/models/en-token.bin"
+private const val spanishTokenizerModelName = "opennlp/models/es-token.bin"
 
 class OpenNlpTokenizer : Transformer, Serializable {
 
