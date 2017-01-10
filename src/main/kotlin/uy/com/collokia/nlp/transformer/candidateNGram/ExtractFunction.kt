@@ -10,9 +10,9 @@ import java.util.*
 class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>(), Serializable {
     override fun apply(tokens: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
         val sentences = JavaConversions.seqAsJavaList(tokens)
-        println(sentences.javaClass.kotlin)
+        //println(sentences.javaClass.kotlin)
         return sentences.flatMap { sentence ->
-            println(sentence.javaClass.kotlin)
+            //println(sentence.javaClass.kotlin)
             wordNGrams(sentence, number_of_grams, true, " ")
         }.toTypedArray()
 

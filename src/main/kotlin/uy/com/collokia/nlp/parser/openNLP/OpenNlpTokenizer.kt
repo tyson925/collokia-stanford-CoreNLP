@@ -81,7 +81,6 @@ class OpenNlpTokenizer : Transformer, Serializable {
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
         //dataset?.show(10,false)
-
         return dataset?.select(dataset.col("*"),
                 functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
 

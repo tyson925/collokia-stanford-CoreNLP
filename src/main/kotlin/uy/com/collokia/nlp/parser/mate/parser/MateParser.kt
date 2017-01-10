@@ -84,7 +84,7 @@ class MateParser : Transformer {
                 lemmatizer.apply(lemmatized).plemmas.toList()
                 val lemmas = lemmatized.plemmas
 
-                var tagged = posTagger.tag(lemmatized)
+                val tagged = posTagger.tag(lemmatized)
                 val posses = tagged.ppos
 
                 val parsed = parser.apply(tagged)
@@ -95,13 +95,13 @@ class MateParser : Transformer {
 
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    val parserIndex = tokenIndex - 1
+                    //val parserIndex = tokenIndex - 1
                     arrayOf(
                             token ?: "",
                             lemmas[tokenIndex] ?: "",
                             posses[tokenIndex] ?: "",
                             if (tokenIndex == 0 || tokenIndex > parses.size ) "root" else parses[tokenIndex -1] ?: "",
-                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex -1]?.toString() ?: "")
+                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex -1].toString())
                 }.toTypedArray()
 
                 results.add(sentenceNum, taggedValues)
@@ -132,7 +132,7 @@ class MateParser : Transformer {
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
-        val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
+        //val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
 
         return dataset?.select(dataset.col("*"),
                 functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))

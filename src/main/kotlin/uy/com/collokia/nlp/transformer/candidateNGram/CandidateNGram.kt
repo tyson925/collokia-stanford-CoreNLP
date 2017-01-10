@@ -6,6 +6,8 @@ import scala.Function1
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
+const val candidateNgramOutputColName = "candidates"
+
 class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram>() {
 
     override fun createTransformFunc(): Function1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>> {

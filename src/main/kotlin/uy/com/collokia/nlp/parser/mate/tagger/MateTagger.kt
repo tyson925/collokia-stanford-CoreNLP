@@ -22,8 +22,8 @@ import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
 
-const val englishTaggerModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-const val spanishTaggerModelName = "./data/mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
+const val englishTaggerModelName = "mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+const val spanishTaggerModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
 const val taggerOutputColName = "taggedContent"
 
 data class TaggedToken(var token: String, var lemma: String, var posTag : String) : Serializable
@@ -79,7 +79,7 @@ class MateTagger : Transformer, Serializable {
                 lemmatizer.apply(lemmatized).plemmas.toList()
                 val lemmas = lemmatized.plemmas
 
-                var tagged = posTagger.tag(lemmatized)
+                val tagged = posTagger.tag(lemmatized)
                 val posses = tagged.ppos
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
@@ -133,7 +133,7 @@ class MateTagger : Transformer, Serializable {
         val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, nullable)
         val posTag = DataTypes.createStructField("posTag", DataTypes.StringType, nullable)
         val output = DataTypes.createStructField(outputColName, DataTypes.createArrayType(DataTypes.createStructType(listOf(token, lemma, posTag))), nullable)
-        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), nullable)
+        return SchemaUtils.appendColumn(schema, outputColName, output.dataType(), nullable)
     }
 
 }
