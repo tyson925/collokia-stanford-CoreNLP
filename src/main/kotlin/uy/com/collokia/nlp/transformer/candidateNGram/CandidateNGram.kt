@@ -4,14 +4,21 @@ import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.types.DataTypes
 import scala.Function1
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
 const val candidateNgramOutputColName = "candidates"
 
-class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram>() {
+class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram> {
+
+    val language : LANGUAGE
+
+    constructor(language: LANGUAGE){
+        this.language = language
+    }
 
     override fun createTransformFunc(): Function1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>> {
-        return ExtractFunction()
+        return ExtractFunction(language)
     }
 
     override fun outputDataType(): DataType? {

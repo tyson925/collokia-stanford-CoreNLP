@@ -13,8 +13,10 @@ import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.tagger.*
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
+import uy.com.collokia.nlp.transformer.candidateNGram.candidateNgramOutputColName
 import uy.com.collokia.nlpTest.util.constructTestDataset
 import uy.com.collokia.nlpTest.util.taggedIndexName
 
@@ -104,9 +106,9 @@ class TaggerTest() {
     }
 
     fun candidateExtractorTest(dataset: Dataset<Row>) {
-        val candidateExtractor = CandidateNGram()
+        val candidateExtractor = CandidateNGram(LANGUAGE.ENGLISH)
         candidateExtractor.inputCol = taggerOutputColName
-        candidateExtractor.outputCol = "candidates"
+        candidateExtractor.outputCol = candidateNgramOutputColName
 
         val candidates = candidateExtractor.transform(dataset)
         candidates.show(10, false)
