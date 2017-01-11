@@ -15,6 +15,7 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
@@ -41,19 +42,22 @@ class MateTagger : Transformer, Serializable {
     var outputColName: String
     val sparkSession: SparkSession
     val udfName = "tagger"
-    val isEnglish: Boolean
+    val language: LANGUAGE
 
 
-    constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent, outputColName: String = taggerOutputColName) {
+    constructor(sparkSession: SparkSession,
+                language: LANGUAGE = LANGUAGE.ENGLISH,
+                inputColName: String = tokenizedContent,
+                outputColName: String = taggerOutputColName) {
 
-        this.isEnglish = isEnglish
+        this.language = language
         this.sparkSession = sparkSession
 
-        val lemmatizerModel = if (isEnglish) englishLemmatizerModelName else spanishLemmatizerModelName
+        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 
-        val taggerModelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
+        val taggerModelName = if (language == LANGUAGE.ENGLISH) englishTaggerModelName else spanishTaggerModelName
         taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
         this.inputColName = inputColName
         this.outputColName = outputColName
@@ -110,7 +114,7 @@ class MateTagger : Transformer, Serializable {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateTagger(sparkSession, isEnglish)
+        return MateTagger(sparkSession, language)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

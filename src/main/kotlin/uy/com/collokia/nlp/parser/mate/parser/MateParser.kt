@@ -13,6 +13,7 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
@@ -43,25 +44,24 @@ class MateParser : Transformer {
     var outputColName: String
     val sparkSession: SparkSession
     val udfName = "parser"
-    val isEnglish: Boolean
+    val language: LANGUAGE
 
 
-    constructor(sparkSession: SparkSession, isEnglish: Boolean = true, inputColName: String = tokenizedContent) {
+    constructor(sparkSession: SparkSession, language: LANGUAGE = LANGUAGE.ENGLISH, inputColName: String = tokenizedContent) {
 
         this.sparkSession = sparkSession
-        val lemmatizerModel = if (isEnglish) englishLemmatizerModelName else spanishLemmatizerModelName
+        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
         lemmatizerWrapper = LematizerWrapper(arrayOf("-model", lemmatizerModel))
 
-        val taggerModelName = if (isEnglish) englishTaggerModelName else spanishTaggerModelName
+        val taggerModelName = if (language == LANGUAGE.ENGLISH) englishTaggerModelName else spanishTaggerModelName
         taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
 
-        val parserModelName = if (isEnglish) englishParserModelName else spanishParsedModelName
+        val parserModelName = if (language == LANGUAGE.ENGLISH) englishParserModelName else spanishParsedModelName
         parserWrapper = ParserWrapper(arrayOf("-model", parserModelName))
 
         this.inputColName = inputColName
         this.outputColName = "taggedContent"
-        this.isEnglish = isEnglish
-
+        this.language = language
 
         val parserUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
             val lemmatizer = lemmatizerWrapper.get()
@@ -128,7 +128,7 @@ class MateParser : Transformer {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateParser(sparkSession, isEnglish, inputColName)
+        return MateParser(sparkSession, language, inputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

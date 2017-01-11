@@ -13,6 +13,7 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import uy.com.collokia.nlp.parser.LANGUAGE
 import java.io.Serializable
 
 const val tokenizedContent = "tokenizedContent"
@@ -29,22 +30,22 @@ class OpenNlpTokenizer : Transformer, Serializable {
     var inputColName: String
     var outputColName: String
     val udfName = "tokenizer"
-    val isEnglish: Boolean
+    val language: LANGUAGE
     var isRaw: Boolean
 
-    constructor(sparkSession: SparkSession, inputColName: String = "content", isEnglish: Boolean = true, isRaw: Boolean = true
+    constructor(sparkSession: SparkSession, inputColName: String = "content", language: LANGUAGE = LANGUAGE.ENGLISH, isOutputRaw: Boolean = true
             //sentenceDetectorModelName : String = englishSentenceDetectorModelName,
             //tokenizerModelName: String = englishTokenizerModelName
     ) {
-        this.isEnglish = isEnglish
-        sdetectorWrapper = if (isEnglish) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName) else OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
-        tokenizerWrapper = if (isEnglish) OpenNlpTokenizerWrapper(englishTokenizerModelName) else OpenNlpTokenizerWrapper(spanishTokenizerModelName)
-        this.isRaw = isRaw
+        this.language = language
+        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName) else OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
+        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(englishTokenizerModelName) else OpenNlpTokenizerWrapper(spanishTokenizerModelName)
+        this.isRaw = isOutputRaw
         this.sparkSession = sparkSession
         this.inputColName = inputColName
         this.outputColName = tokenizedContent
 
-        if (isRaw) {
+        if (isOutputRaw) {
             val tokenizer = UDF1 { content: String ->
                 val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
                     tokenizerWrapper.get().tokenize(sentence).toList()
@@ -76,7 +77,7 @@ class OpenNlpTokenizer : Transformer, Serializable {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return OpenNlpTokenizer(sparkSession, inputColName, isEnglish, isRaw)
+        return OpenNlpTokenizer(sparkSession, inputColName, language, isRaw)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

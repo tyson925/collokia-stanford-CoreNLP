@@ -5,6 +5,7 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import scala.Tuple2
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
 import java.io.Serializable
 import java.util.*
@@ -35,7 +36,7 @@ fun constructTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession): Dat
 
     val input = sparkSession.createDataFrame(testRdd, TestData::class.java).toDF("id", "content")
     //val sparkSession = SparkSession.builder().master("local").appName("test").orCreate
-    val tokenizer = OpenNlpTokenizer(sparkSession, isEnglish = true, isRaw = false)
+    val tokenizer = OpenNlpTokenizer(sparkSession, language = LANGUAGE.ENGLISH, isOutputRaw = false)
 
     val tokenized = tokenizer.transform(input)
 

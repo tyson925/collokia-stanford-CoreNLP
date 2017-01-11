@@ -16,6 +16,7 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
@@ -39,21 +40,21 @@ class MateLemmatizer : Transformer, Serializable {
     val sparkSession: SparkSession
     val isRaw: Boolean
     val isRawInput: Boolean
-    var isEnglish: Boolean
+    var language: LANGUAGE
     val udfName = "lemmatizer"
 
     constructor(sparkSession: SparkSession,
                 isRaw: Boolean,
                 isRawInput: Boolean,
-                isEnglish: Boolean = true,
+                language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = tokenizedContent,
                 outputColName: String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
         this.isRaw = isRaw
         this.isRawInput = isRawInput
-        this.isEnglish = isEnglish
-        val lemmatizerModel = if (isEnglish) englishLemmatizerModelName else spanishLemmatizerModelName
+        this.language = language
+        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 
@@ -138,7 +139,7 @@ class MateLemmatizer : Transformer, Serializable {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(sparkSession, isRaw, isEnglish, isRawInput, inputColName, outputColName)
+        return MateLemmatizer(sparkSession, isRaw, isRawInput, language, inputColName, outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

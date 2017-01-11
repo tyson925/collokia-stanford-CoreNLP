@@ -7,7 +7,14 @@ import uy.com.collokia.nlp.transformer.ngram.number_of_grams
 import java.io.Serializable
 import java.util.*
 
-class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>(), Serializable {
+class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>, Serializable {
+
+
+
+    constructor(){
+
+    }
+
     override fun apply(tokens: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
         val sentences = JavaConversions.seqAsJavaList(tokens)
         //println(sentences.javaClass.kotlin)
