@@ -1,6 +1,6 @@
 group 'com.collokia'
 version '1.0.1'
-description 'collokia-spark machine learning examples'
+description 'collokia spark natural language processing stuffs'
 
 buildscript {
     ext.kotlin_version = '1.0.5'

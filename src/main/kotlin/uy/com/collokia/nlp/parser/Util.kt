@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlp.parser
 
 import org.apache.spark.ml.Pipeline
@@ -29,7 +31,7 @@ fun lemmatizeContent(sparkSession: SparkSession,
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
     val analyzer = textAnalyzer.fit(dataset)
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName)
+    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
     return analyzedData
 }
 
@@ -45,7 +47,7 @@ fun postTagContent(sparkSession: SparkSession,
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, tagger))
 
     val analyzer = textAnalyzer.fit(dataset)
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName)
+    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
     return analyzedData
 }
 
@@ -56,10 +58,10 @@ fun parseContent(sparkSession: SparkSession,
 ): Dataset<Row> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = false, language = language).setInputColName(inputColName)
-    val parser = MateParser(sparkSession, language).setInputColName(tokenizer.outputColName)
+    val parser = MateParser(sparkSession, language = language).setInputColName(tokenizer.outputColName)
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, parser))
 
     val analyzer = textAnalyzer.fit(dataset)
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName)
+    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
     return analyzedData
 }

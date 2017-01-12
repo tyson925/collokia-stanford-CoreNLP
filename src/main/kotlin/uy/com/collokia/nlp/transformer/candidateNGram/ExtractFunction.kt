@@ -86,21 +86,22 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
     }
 
     private fun filterEnglishCandidate(candidatePOSs: List<String>): Boolean {
+
         val filteredPOSs = candidatePOSs.filter { pos -> if (pos.startsWith("NN") || pos == "JJ" || pos.equals(Regex("VB*"))) true else false }
         return if (filteredPOSs.size == candidatePOSs.size) true else false
     }
 
     private fun filterSpanishCandidate(candidatePOSs: List<String>, candidateLemma: List<String>): Boolean {
 
-
         val filteredPOSs = candidatePOSs.filterIndexed { index, pos ->
-            if (pos == "n" || (pos == "v" && candidateLemma[index] != "ser")) true else false
+            if (pos == "n" || (pos == "v" && (candidateLemma[index] != "ser" && candidateLemma[index] != "esta" &&
+                    candidateLemma[index] != "estar" && candidateLemma[index] != "ir"
+                    && candidateLemma[index] != "del"))) true else false
         }
 
-        return when {
-            (filteredPOSs.size == candidatePOSs.size) -> true
-            else -> false
-        }
+        return if (filteredPOSs.size == candidatePOSs.size) true
+        else false
+
     }
 
 }
