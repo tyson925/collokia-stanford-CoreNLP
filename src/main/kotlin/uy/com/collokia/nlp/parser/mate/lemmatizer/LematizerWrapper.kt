@@ -7,8 +7,9 @@ import java.io.Serializable
 
 class LematizerWrapper(private val props : Array<String>) : Serializable {
 
-
-    @Transient private var lemmatizer: Lemmatizer? = null
+    companion object{
+        @Transient private var lemmatizer: Lemmatizer? = null
+    }
 
     fun get() : Lemmatizer {
 

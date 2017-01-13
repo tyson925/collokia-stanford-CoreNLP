@@ -6,7 +6,9 @@ import java.io.Serializable
 
 class TaggerWrapper(private val props : Array<String>) : Serializable {
 
-    @Transient private var tagger: Tagger? = null
+    companion object {
+        @Transient private var tagger: Tagger? = null
+    }
 
     fun get() : Tagger {
         return if (tagger == null) {

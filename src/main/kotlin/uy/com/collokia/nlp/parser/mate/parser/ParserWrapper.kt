@@ -6,8 +6,9 @@ import java.io.Serializable
 
 
 class ParserWrapper(private val props : Array<String>) : Serializable {
-
-    @Transient private var parser: Parser? = null
+    companion object {
+        @Transient private var parser: Parser? = null
+    }
 
     fun get() : Parser {
 

@@ -6,7 +6,9 @@ import java.io.FileInputStream
 import java.io.Serializable
 
 class OpenNlpTokenizerWrapper(private val modelName : String)  : Serializable {
-    @Transient private var tokenizer: TokenizerME? = null
+    companion object {
+        @Transient private var tokenizer: TokenizerME? = null
+    }
 
     fun get() : TokenizerME {
 
