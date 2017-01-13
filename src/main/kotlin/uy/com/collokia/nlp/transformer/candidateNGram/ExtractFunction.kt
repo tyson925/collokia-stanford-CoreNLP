@@ -52,7 +52,7 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
                 RET = tokens.filter { token -> filterEnglishCandidate(listOf(token.apply(2))) }.map { token -> token.apply(1) }.toMutableList()
             } else {
                 RET = tokens.filter { token -> filterSpanishCandidate(listOf(token.apply(2)), listOf(token.apply(1))) }.map { token ->
-                    token.apply(1)
+                    getSpanishLemma(token)
                 }.toMutableList()
             }
 
@@ -63,7 +63,12 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
                 val candidatePOSs = mutableListOf<String>()
                 val candidateLemmas = mutableListOf<String>()
                 for (j in 0..N - 1) {
-                    candidateTokens.append(tokens[i + j].apply(1))
+                    if (language == LANGUAGE.ENGLISH){
+                        candidateTokens.append(tokens[i + j].apply(1))
+                    } else {
+                        candidateTokens.append(getSpanishLemma(tokens[i + j]))
+                    }
+
                     candidateLemmas.add(tokens[i + j].apply(1))
                     candidatePOSs.add(tokens[i + j].apply(2))
                     if (j < (N - 1)) {
@@ -102,6 +107,14 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
         return if (filteredPOSs.size == candidatePOSs.size) true
         else false
 
+    }
+
+    private fun getSpanishLemma(token : WrappedArray<String>) : String {
+        return if (token.apply(2) == "n"){
+            token.apply(0)
+        } else {
+            token.apply(1)
+        }
     }
 
 }
