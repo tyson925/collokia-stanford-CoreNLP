@@ -20,3 +20,17 @@ hs_err_pid*
 build
 /.idea/
 /twitter.txt
+#gradle/
+#gradlew
+#gradlew.bat
+spark-warehouse/
+src/main/resources/2016_09_12.zip
+src/main/resources/2016_09_12/
+src/main/resources/allSoTags.json
+src/main/resources/data/
+src/main/resources/lrModel.zip
+src/main/resources/lrModel/
+src/main/resources/mate/
+src/main/resources/opennlp/
+src/main/resources/stopwords.txt
+src/main/resources/tagRelativFreq.txt
