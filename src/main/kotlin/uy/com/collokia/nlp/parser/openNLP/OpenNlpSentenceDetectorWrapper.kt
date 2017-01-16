@@ -6,7 +6,9 @@ import java.io.FileInputStream
 import java.io.Serializable
 
 class OpenNlpSentenceDetectorWrapper(private val modelName: String) : Serializable {
-    @Transient private var sDetector: SentenceDetectorME? = null
+    companion object {
+        @Transient private var sDetector: SentenceDetectorME? = null
+    }
 
     fun get(): SentenceDetectorME {
 
