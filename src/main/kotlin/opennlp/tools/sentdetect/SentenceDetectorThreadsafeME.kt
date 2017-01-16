@@ -144,7 +144,7 @@ class SentenceDetectorThreadsafeME:SentenceDetector {
 
   private fun getFirstWS(s:String , pos:Int):Int {
     var _pos = pos
-    while (pos < s.length && !StringUtil.isWhitespace(s[_pos])) {
+    while (_pos < s.length && !StringUtil.isWhitespace(s[_pos])) {
       _pos++
     }
     return _pos
