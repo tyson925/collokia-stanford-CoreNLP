@@ -33,13 +33,23 @@ class OpenNlpTokenizer : Transformer, Serializable {
     val language: LANGUAGE
     var isRaw: Boolean
 
-    constructor(sparkSession: SparkSession, inputColName: String = "content", language: LANGUAGE = LANGUAGE.ENGLISH, isOutputRaw: Boolean = true
-            //sentenceDetectorModelName : String = englishSentenceDetectorModelName,
-            //tokenizerModelName: String = englishTokenizerModelName
+    constructor(sparkSession: SparkSession,
+                inputColName: String = "content",
+                language: LANGUAGE = LANGUAGE.ENGLISH,
+                isOutputRaw: Boolean = true,
+                sentenceDetectorModelName: String = englishSentenceDetectorModelName,
+                tokenizerModelName: String = englishTokenizerModelName
     ) {
+
         this.language = language
-        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName) else OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
-        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(englishTokenizerModelName) else OpenNlpTokenizerWrapper(spanishTokenizerModelName)
+        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName)
+        else if (language == LANGUAGE.SPANISH) OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
+        else OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
+
+        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(englishTokenizerModelName)
+        else if (language == LANGUAGE.SPANISH) OpenNlpTokenizerWrapper(spanishTokenizerModelName)
+        else OpenNlpTokenizerWrapper(tokenizerModelName)
+
         this.isRaw = isOutputRaw
         this.sparkSession = sparkSession
         this.inputColName = inputColName
@@ -47,17 +57,29 @@ class OpenNlpTokenizer : Transformer, Serializable {
 
         if (isOutputRaw) {
             val tokenizer = UDF1 { content: String ->
-                val tokenizedText = sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
-                    tokenizerWrapper.get().tokenize(sentence).toList()
+                val tokenizedText = try {
+                    sdetectorWrapper.get().sentDetect(content).flatMap { sentence ->
+                        tokenizerWrapper.get().tokenize(sentence).toList()
+                    }
+                } catch (e: Exception) {
+                    println("problem with content: " + content)
+                    content.split(Regex("\\W"))
                 }
                 tokenizedText
             }
 
             sparkSession.udf().register(udfName, tokenizer, DataTypes.createArrayType(DataTypes.StringType))
         } else {
+
             val tokenizer = UDF1 { content: String ->
                 val tokenizedText = sdetectorWrapper.get().sentDetect(content).map { sentence ->
-                    tokenizerWrapper.get().tokenize(sentence).toList()
+                    try {
+                        tokenizerWrapper.get().tokenize(sentence).toList()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        println("problem with content: " + sentence)
+                        sentence.split(Regex("\\W"))
+                    }
                 }
                 tokenizedText
             }

@@ -38,20 +38,20 @@ class MateLemmatizer : Transformer, Serializable {
     var inputColName: String
     var outputColName: String
     val sparkSession: SparkSession
-    val isRaw: Boolean
+    val isRawOutput: Boolean
     val isRawInput: Boolean
     var language: LANGUAGE
     val udfName = "lemmatizer"
 
     constructor(sparkSession: SparkSession,
-                isRaw: Boolean,
+                isRawOutput: Boolean,
                 isRawInput: Boolean,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = tokenizedContent,
                 outputColName: String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
-        this.isRaw = isRaw
+        this.isRawOutput = isRawOutput
         this.isRawInput = isRawInput
         this.language = language
         val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
@@ -73,14 +73,14 @@ class MateLemmatizer : Transformer, Serializable {
                 val lemmatized = SentenceData09()
                 lemmatized.init(sentenceArray)
 
-                if (this.isRaw) {
+                if (this.isRawOutput) {
                     lemmatizer.apply(lemmatized).plemmas.joinToString(" ")
                 } else {
                     lemmatizer.apply(lemmatized).plemmas.toList()
                 }
             })
 
-            if (isRaw) {
+            if (isRawOutput) {
                 sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.StringType)
             } else {
                 sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.createArrayType(DataTypes.StringType))
@@ -139,7 +139,7 @@ class MateLemmatizer : Transformer, Serializable {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(sparkSession, isRaw, isRawInput, language, inputColName, outputColName)
+        return MateLemmatizer(sparkSession, isRawOutput, isRawInput, language, inputColName, outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row>? {

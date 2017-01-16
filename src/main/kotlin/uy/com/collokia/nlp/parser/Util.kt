@@ -27,7 +27,7 @@ fun lemmatizeContent(sparkSession: SparkSession,
                      language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<Row> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = false, language = language).setInputColName(inputColName)
-    val lemmatizer = MateLemmatizer(sparkSession, isRaw = true, isRawInput = false, language = language).setInputColName(tokenizer.outputColName)
+    val lemmatizer = MateLemmatizer(sparkSession, isRawOutput = false, isRawInput = false, language = language).setInputColName(tokenizer.outputColName)
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
     val analyzer = textAnalyzer.fit(dataset)

@@ -38,7 +38,7 @@ class LemmatizerTest : Serializable {
 
     fun lemmatizerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
-        val tagger = MateLemmatizer(sparkSession, isRawInput = false, isRaw = true)
+        val tagger = MateLemmatizer(sparkSession, isRawInput = false, isRawOutput = true)
         val lemmatized = tagger.transform(testCorpus)?.toJavaRDD()?.map { row ->
             println(row.schema())
             val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
