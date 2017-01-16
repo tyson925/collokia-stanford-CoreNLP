@@ -44,7 +44,13 @@ import java.util.regex.Pattern
  * @see TokenizerModel
  * @see TokenSample
  */
-class TokenizerME {
+class TokenizerThreadsafeME: Tokenizer {
+    override fun tokenize(s: String): Array<String> {
+        return Span.spansToStrings(tokenizePos(s), s)
+    }
+    override fun tokenizePos(s: String?): Array<out Span> {
+        return this.tokenizePosAndProb(s!!).first
+    }
 
     companion object {
         /**
@@ -107,6 +113,7 @@ class TokenizerME {
         this.cg = factory.contextGenerator
         this.model = model.maxentModel
         this.useAlphaNumericOptimization = factory.isUseAlphaNumericOptmization
+
     }
 
     /**
@@ -142,7 +149,7 @@ class TokenizerME {
      *
      * @return   A span array containing individual tokens as elements.
      */
-    fun tokenizePos(d: String): Triple<Array<Span>, ArrayList<Span>, ArrayList<Double>> {
+    fun tokenizePosAndProb(d: String): Pair<Array<Span>, ArrayList<Double>> {
         val tokens = WhitespaceTokenizer.INSTANCE.tokenizePos(d)
         val newTokens = ArrayList<Span>()
         val tokProbs = ArrayList<Double>(50)
@@ -181,7 +188,7 @@ class TokenizerME {
 
         val spans = newTokens.toTypedArray()
 
-        return Triple(spans, newTokens, tokProbs)
+        return Pair(spans, tokProbs)
     }
 
 }
