@@ -2,6 +2,8 @@
 
 package uy.com.collokia.nlp.parser.mate.tagger
 
+import com.collokia.resources.MATE_POSTAGGER_RESOURCES_PATH_EN
+import com.collokia.resources.MATE_POSTAGGER_RESOURCES_PATH_ES
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -15,6 +17,7 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
@@ -23,8 +26,15 @@ import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
 
-const val englishTaggerModelName = "mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-const val spanishTaggerModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
+//"mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
+val englishTaggerModelName: String  by lazy {
+    ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_EN).absolutePath
+}
+//"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
+val spanishTaggerModelName: String  by lazy {
+    ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_ES).absolutePath
+}
+
 const val taggerOutputColName = "taggedContent"
 
 data class TaggedToken(var token: String, var lemma: String, var posTag : String) : Serializable

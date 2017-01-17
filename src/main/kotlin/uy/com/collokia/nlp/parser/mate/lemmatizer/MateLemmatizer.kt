@@ -2,6 +2,8 @@
 
 package uy.com.collokia.nlp.parser.mate.lemmatizer
 
+import com.collokia.resources.MATE_LEMMATIZER_RESOURCES_PATH_EN
+import com.collokia.resources.MATE_LEMMATIZER_RESOURCES_PATH_ES
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -16,23 +18,29 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
 
 const val lemmatizedContentCol = "lemmatizedContent"
-const val englishLemmatizerModelName = "mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
-const val spanishLemmatizerModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
+//"mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
+val englishLemmatizerModelName: String  by lazy {
+    ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_EN).absolutePath
+}
+//"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
+val spanishLemmatizerModelName: String  by lazy {
+    ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_ES).absolutePath
+}
 
 data class LemmatizedToken(var token: String, var lemma: String) : Serializable
 
 data class LemmatizedSentence(var lemmatizedSentence: List<LemmatizedToken>) : Serializable
 
-data class LemmatizedContent(var lemmatizedContent : List<LemmatizedSentence>) : Serializable
+data class LemmatizedContent(var lemmatizedContent: List<LemmatizedSentence>) : Serializable
 
 class MateLemmatizer : Transformer, Serializable {
-
 
     val lemmatizerWrapper: LematizerWrapper
     var inputColName: String
@@ -112,7 +120,7 @@ class MateLemmatizer : Transformer, Serializable {
                         //LemmatizedToken(token ?: "", lemmas[tokenIndex])
                     }.toTypedArray()
 
-                    results.add(sentenceNum,lemmatizedTokens)
+                    results.add(sentenceNum, lemmatizedTokens)
                 }
                 results
             })

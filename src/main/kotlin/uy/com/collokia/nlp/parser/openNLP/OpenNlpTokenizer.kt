@@ -2,6 +2,10 @@
 
 package uy.com.collokia.nlp.parser.openNLP
 
+import com.collokia.resources.OPENNLP_SENTENCE_RESOURCES_PATH_EN
+import com.collokia.resources.OPENNLP_SENTENCE_RESOURCES_PATH_ES
+import com.collokia.resources.OPENNLP_TOKEN_RESOURCES_PATH_EN
+import com.collokia.resources.OPENNLP_TOKEN_RESOURCES_PATH_ES
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.SchemaUtils
@@ -13,14 +17,29 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import java.io.Serializable
 
 const val tokenizedContent = "tokenizedContent"
-private const val englishSentenceDetectorModelName = "opennlp/models/en-sent.bin"
-private const val spanishSentenceDetectorModelName = "opennlp/models/es-sent.bin"
-private const val englishTokenizerModelName = "opennlp/models/en-token.bin"
-private const val spanishTokenizerModelName = "opennlp/models/es-token.bin"
+
+// "opennlp/models/en-sent.bin"
+val englishSentenceDetectorModelName : String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_EN).absolutePath
+}
+//= "opennlp/models/es-sent.bin"
+val spanishSentenceDetectorModelName : String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_ES).absolutePath
+}
+// "opennlp/models/en-token.bin"
+val englishTokenizerModelName  : String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_EN).absolutePath
+}
+// "opennlp/models/es-token.bin"
+val spanishTokenizerModelName : String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_ES).absolutePath
+}
+
 
 class OpenNlpTokenizer : Transformer, Serializable {
 
