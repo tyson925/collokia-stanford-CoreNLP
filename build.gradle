@@ -1,5 +1,5 @@
 group 'com.collokia'
-version '1.0.2.3'
+version '1.0.3'
 description 'collokia spark natural language processing stuffs'
 
 buildscript {
@@ -65,6 +65,10 @@ dependencies {
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$version_jackson_kotlin"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
     compile files(['scalalib/lib.jar'])
+
+    compile "com.collokia.resources:mate:0.1"
+    compile "com.collokia.resources:stopword:0.1"
+    compile "com.collokia.resources:opennlp:0.1"
 
     configurations.all {
         resolutionStrategy {
