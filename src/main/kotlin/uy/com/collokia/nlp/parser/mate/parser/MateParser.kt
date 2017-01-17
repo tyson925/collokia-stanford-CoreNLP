@@ -1,5 +1,7 @@
 package uy.com.collokia.nlp.parser.mate.parser
 
+import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_ES
+import com.collokia.resources.MATE_STANFORD_RESOURCES_PATH_EN
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -13,6 +15,7 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
@@ -25,14 +28,20 @@ import java.io.Serializable
 import java.util.*
 
 //const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
-const val englishParserModelName = "mate/models/english/stanford.model"
-const val spanishParsedModelName = "mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
+//"mate/models/english/stanford.model"
+val englishParserModelName: String by lazy {
+    ResourceUtil.getResourceAsFile(MATE_STANFORD_RESOURCES_PATH_EN).absolutePath
+}
+//"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
+val spanishParsedModelName: String by lazy {
+    ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_ES).absolutePath
+}
 
-data class ParsedToken(var token: String, var lemma: String, var posTag : String,var parse : String,var head : Int) : Serializable
+data class ParsedToken(var token: String, var lemma: String, var posTag: String, var parse: String, var head: Int) : Serializable
 
 data class ParsedSentence(var parsedSentence: List<ParsedToken>) : Serializable
 
-data class ParsedContent(var parsedContent : List<ParsedSentence>) : Serializable
+data class ParsedContent(var parsedContent: List<ParsedSentence>) : Serializable
 
 
 class MateParser : Transformer {
@@ -93,15 +102,14 @@ class MateParser : Transformer {
                 val heads = parsed.pheads
 
 
-
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
                     //val parserIndex = tokenIndex - 1
                     arrayOf(
                             token ?: "",
                             lemmas[tokenIndex] ?: "",
                             posses[tokenIndex] ?: "",
-                            if (tokenIndex == 0 || tokenIndex > parses.size ) "root" else parses[tokenIndex -1] ?: "",
-                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex -1].toString())
+                            if (tokenIndex == 0 || tokenIndex > parses.size) "root" else parses[tokenIndex - 1] ?: "",
+                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex - 1].toString())
                 }.toTypedArray()
 
                 results.add(sentenceNum, taggedValues)
