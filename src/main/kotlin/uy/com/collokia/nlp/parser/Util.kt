@@ -24,10 +24,11 @@ enum class LANGUAGE {
 fun lemmatizeContent(sparkSession: SparkSession,
                      dataset: Dataset<Row>,
                      inputColName: String = SOThreadExtractValues::content.name,
-                     language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<Row> {
+                     language: LANGUAGE = LANGUAGE.ENGLISH,
+                     isOutputRaw:Boolean = false): Dataset<Row> {
 
-    val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = false, language = language).setInputColName(inputColName)
-    val lemmatizer = MateLemmatizer(sparkSession, isRawOutput = false, isRawInput = false, language = language).setInputColName(tokenizer.outputColName)
+    val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = isOutputRaw, language = language).setInputColName(inputColName)
+    val lemmatizer = MateLemmatizer(sparkSession, isRawOutput = isOutputRaw, isRawInput = isOutputRaw, language = language).setInputColName(tokenizer.outputColName)
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
     val analyzer = textAnalyzer.fit(dataset)
