@@ -25,7 +25,6 @@ import opennlp.tools.dictionary.Dictionary
 import opennlp.tools.sentdetect.lang.Factory
 import opennlp.tools.util.Span
 import opennlp.tools.util.StringUtil
-import uy.com.collokia.nlp.parser.openNLP.OpenNlpSentenceDetectorWrapper
 import java.util.*
 
 /**
@@ -102,14 +101,14 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
      *             SentenceDetector functionality.
      */
     constructor(model: SentenceModel, factory: Factory) {
-        this.model = model.maxentModel;
+        this.model = model.maxentModel
         // if the model has custom EOS characters set, use this to get the context
         // generator and the EOS scanner; otherwise use language-specific defaults
-        val customEOSCharacters = model.eosCharacters;
+        val customEOSCharacters = model.eosCharacters
         if (customEOSCharacters == null) {
-            cgen = factory.createSentenceContextGenerator(model.getLanguage(),
-                    getAbbreviations(model.abbreviations));
-            scanner = factory.createEndOfSentenceScanner(model.getLanguage())
+            cgen = factory.createSentenceContextGenerator(model.language,
+                    getAbbreviations(model.abbreviations))
+            scanner = factory.createEndOfSentenceScanner(model.language)
         } else {
             cgen = factory.createSentenceContextGenerator(
                     getAbbreviations(model.abbreviations), customEOSCharacters)

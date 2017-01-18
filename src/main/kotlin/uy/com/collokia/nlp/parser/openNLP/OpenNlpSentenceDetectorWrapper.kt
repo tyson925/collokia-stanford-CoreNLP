@@ -1,25 +1,27 @@
 package uy.com.collokia.nlp.parser.openNLP
 
-import opennlp.tools.sentdetect.SentenceDetectorThreadsafeME
+import opennlp.tools.sentdetect.SentenceDetectorME
 import opennlp.tools.sentdetect.SentenceModel
 import java.io.FileInputStream
 import java.io.Serializable
+import java.util.*
 
 class OpenNlpSentenceDetectorWrapper(private val modelName: String) : Serializable {
     companion object {
-        @Transient private var sDetector: SentenceDetectorThreadsafeME? = null
+        @Volatile @Transient private var modelMap = HashMap<String,SentenceModel>()
+
+        @Synchronized fun getModel( modelName:String):SentenceModel{
+            return modelMap[modelName].let{
+                it ?: SentenceModel(FileInputStream(modelName)).let{
+                    modelMap.put(modelName, it)
+                    it
+                }
+            }
+        }
     }
 
-    fun get(): SentenceDetectorThreadsafeME {
-
-        return if (sDetector == null) {
-            sDetector = SentenceDetectorThreadsafeME(SentenceModel(FileInputStream((modelName))))
-            sDetector!!
-        } else {
-            sDetector!!
-        }
-
-
+    fun get(): SentenceDetectorME {
+            return SentenceDetectorME(getModel(modelName))
     }
 
 }

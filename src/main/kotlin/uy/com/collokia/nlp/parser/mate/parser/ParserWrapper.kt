@@ -7,10 +7,10 @@ import java.io.Serializable
 
 class ParserWrapper(private val props : Array<String>) : Serializable {
     companion object {
-        @Transient private var parser: Parser? = null
+        @Volatile @Transient private var parser: Parser? = null
     }
 
-    fun get() : Parser {
+    @Synchronized fun get() : Parser {
 
         return if (parser == null) {
             val optsTagger = Options(props)

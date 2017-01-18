@@ -8,10 +8,10 @@ import java.io.Serializable
 class LematizerWrapper(private val props : Array<String>) : Serializable {
 
     companion object{
-        @Transient private var lemmatizer: Lemmatizer? = null
+        @Volatile @Transient private var lemmatizer: Lemmatizer? = null
     }
 
-    fun get() : Lemmatizer {
+    @Synchronized  fun get() : Lemmatizer {
 
         return if (lemmatizer == null) {
             val optsLemmatizer = Options(props)
