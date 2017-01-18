@@ -24,19 +24,19 @@ import java.io.Serializable
 const val tokenizedContent = "tokenizedContent"
 
 // "opennlp/models/en-sent.bin"
-val englishSentenceDetectorModelName : String  by lazy {
+val englishSentenceDetectorModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_EN).absolutePath
 }
 //= "opennlp/models/es-sent.bin"
-val spanishSentenceDetectorModelName : String  by lazy {
+val spanishSentenceDetectorModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_ES).absolutePath
 }
 // "opennlp/models/en-token.bin"
-val englishTokenizerModelName  : String  by lazy {
+val englishTokenizerModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_EN).absolutePath
 }
 // "opennlp/models/es-token.bin"
-val spanishTokenizerModelName : String  by lazy {
+val spanishTokenizerModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_ES).absolutePath
 }
 
@@ -59,6 +59,8 @@ class OpenNlpTokenizer : Transformer, Serializable {
                 sentenceDetectorModelName: String = englishSentenceDetectorModelName,
                 tokenizerModelName: String = englishTokenizerModelName
     ) {
+
+        //SentenceModel()
 
         this.language = language
         sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName)
@@ -91,13 +93,16 @@ class OpenNlpTokenizer : Transformer, Serializable {
         } else {
 
             val tokenizer = UDF1 { content: String ->
-                val tokenizedText = sdetectorWrapper.get().sentDetect(content).map { sentence ->
-                    try {
+                val tokenizedText = try {
+                    sdetectorWrapper.get().sentDetect(content).map { sentence ->
                         tokenizerWrapper.get().tokenize(sentence).toList()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        println("problem with content: " + sentence)
-                        sentence.split(Regex("\\W"))
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    println("problem with content: " + content)
+                    //content.split(Regex("\\W"))
+                    content.split(".").map { sentence ->
+                        tokenizerWrapper.get().tokenize(sentence).toList()
                     }
                 }
                 tokenizedText
