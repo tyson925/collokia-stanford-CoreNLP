@@ -4,20 +4,25 @@ import opennlp.tools.tokenize.TokenizerModel
 import opennlp.tools.tokenize.TokenizerThreadsafeME
 import java.io.FileInputStream
 import java.io.Serializable
+import java.util.*
 
 class OpenNlpTokenizerWrapper(private val modelName : String)  : Serializable {
     companion object {
-        @Transient private var tokenizer: TokenizerThreadsafeME? = null
+        @Volatile @Transient private var tokenizerMap = HashMap<String, TokenizerThreadsafeME>()
+
+        @Synchronized fun getTokenizer(modelName:String):TokenizerThreadsafeME{
+            return tokenizerMap[modelName].let{
+                it ?: TokenizerThreadsafeME(TokenizerModel(FileInputStream(modelName))).let{
+                    tokenizerMap.put(modelName, it)
+                    it
+                }
+            }
+        }
     }
 
-    fun get() : TokenizerThreadsafeME {
+    @Synchronized fun get() : TokenizerThreadsafeME {
 
-        return if (tokenizer == null) {
-            tokenizer = TokenizerThreadsafeME(TokenizerModel(FileInputStream(modelName)))
-            tokenizer!!
-        } else {
-            tokenizer!!
-        }
+        return getTokenizer(modelName)
     }
 
 }

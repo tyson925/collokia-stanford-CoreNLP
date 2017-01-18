@@ -8,11 +8,11 @@ import java.util.*
 
 class OpenNlpSentenceDetectorWrapper(private val modelName: String) : Serializable {
     companion object {
-        @Volatile @Transient private var modelMap = HashMap<String,SentenceModel>()
+        @Volatile @Transient private var modelMap = HashMap<String, SentenceModel>()
 
-        @Synchronized fun getModel( modelName:String):SentenceModel{
-            return modelMap[modelName].let{
-                it ?: SentenceModel(FileInputStream(modelName)).let{
+        @Synchronized fun getModel(modelName: String): SentenceModel {
+            return modelMap[modelName].let {
+                it ?: SentenceModel(FileInputStream(modelName)).let {
                     modelMap.put(modelName, it)
                     it
                 }
@@ -20,8 +20,8 @@ class OpenNlpSentenceDetectorWrapper(private val modelName: String) : Serializab
         }
     }
 
-    fun get(): SentenceDetectorME {
-            return SentenceDetectorME(getModel(modelName))
+    @Synchronized fun get(): SentenceDetectorME {
+        return SentenceDetectorME(getModel(modelName))
     }
 
 }
