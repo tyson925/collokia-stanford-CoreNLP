@@ -198,7 +198,11 @@ fun evaluateModel10Fold(pipeline: Pipeline, corpus: Dataset<Row>) {
 
     val crossValidatorModel = crossValidator.fit(corpus) // corpus: DataFrame
 
+    val prediction = crossValidatorModel.transform(corpus)
+
     val bestModel = crossValidatorModel.bestModel()
+
+    bestModel
 
     val avgMetrics = crossValidatorModel.avgMetrics()
 

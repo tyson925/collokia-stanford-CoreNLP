@@ -46,6 +46,12 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 
 dependencies {
+
+    compile "org.elasticsearch:elasticsearch:$versionElasticSearch"
+    compile "org.elasticsearch.client:transport:$versionElasticSearch"
+    compile "org.elasticsearch:elasticsearch-spark-20_${scalaVersion}:$versionElasticSearchMR"
+
+
     compile "com.googlecode.mate-tools:anna:3.5"
     compile 'edu.washington.cs.knowitall:opennlp-sent-models:1.5'
     compile 'edu.washington.cs.knowitall:opennlp-tokenize-models:1.5'
