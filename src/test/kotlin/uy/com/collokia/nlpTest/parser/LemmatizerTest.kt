@@ -9,6 +9,8 @@ import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.elasticSearch.readSoContentFromEs
+import uy.com.collokia.common.utils.formatterToTimePrint
+import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
@@ -27,10 +29,12 @@ class LemmatizerTest : Serializable {
     companion object {
 
         @JvmStatic fun main(args: Array<String>) {
-
-            val test = LemmatizerTest()
-            //test.readLemmatizedContentFromES()
-            test.writeLemmatizedContentToES()
+            val time = measureTimeInMillis {
+                val test = LemmatizerTest()
+                //test.readLemmatizedContentFromES()
+                test.writeLemmatizedContentToES()
+            }
+            println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
     }
 

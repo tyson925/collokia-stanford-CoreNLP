@@ -150,12 +150,14 @@ class MateLemmatizer : Transformer, Serializable {
         return MateLemmatizer(sparkSession, isRawOutput, isRawInput, language, inputColName, outputColName)
     }
 
-    override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
+    override fun transform(dataset: Dataset<*>?): Dataset<Row> {
 
         val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
 
-        return dataset?.select(dataset.col("*"),
-                functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+        return dataset?.let {
+            dataset.select(dataset.col("*"),
+                    functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+        } ?: sparkSession.emptyDataFrame()
     }
 
     override fun transformSchema(schema: StructType?): StructType {

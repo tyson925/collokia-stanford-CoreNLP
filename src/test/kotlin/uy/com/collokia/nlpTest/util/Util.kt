@@ -17,7 +17,7 @@ const val parsedIndexName = "parser_test"
 
 data class TestData(val id: Int, val text: String) : Serializable
 
-fun constructTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession): Dataset<Row>? {
+fun constructTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession): Dataset<Row> {
     val test = LinkedList<Tuple2<Int, String>>()
     test.add(Tuple2(1, "Stanford University is located in California. It is a great university."))
     test.add(Tuple2(2, "University of Szeged is,located in Hungary. It is a great university."))
@@ -38,7 +38,7 @@ fun constructTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession): Dat
     //val sparkSession = SparkSession.builder().master("local").appName("test").orCreate
     val tokenizer = OpenNlpTokenizer(sparkSession, language = LANGUAGE.ENGLISH, isOutputRaw = false)
 
-    val tokenized = tokenizer.transform(input)
+    val tokenized = tokenizer.transform(input)!!
 
     tokenized?.show(10, false)
 

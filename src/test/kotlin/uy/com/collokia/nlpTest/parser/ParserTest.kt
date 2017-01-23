@@ -8,6 +8,8 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
 import uy.com.collokia.common.utils.deleteFileIfExist
+import uy.com.collokia.common.utils.formatterToTimePrint
+import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.*
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
@@ -24,9 +26,12 @@ class ParserTest() {
         const val EDUCAR_PARSED_CORPUS = "./../../../data/dataset/educarCorpus/"
         const val EDUCAR_CORPUS = "./../../../../collokia-data-es-indexer/data/educar/textos.json"
         @JvmStatic fun main(args: Array<String>) {
-            val test = ParserTest()
-            //test.writeParsedContentToES()
-            test.parseEducarCorpus()
+            val time = measureTimeInMillis {
+                val test = ParserTest()
+                //test.writeParsedContentToES()
+                test.parseEducarCorpus()
+            }
+            println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
     }
 

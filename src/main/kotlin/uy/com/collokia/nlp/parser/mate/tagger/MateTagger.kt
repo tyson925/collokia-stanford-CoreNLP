@@ -127,10 +127,12 @@ class MateTagger : Transformer, Serializable {
         return MateTagger(sparkSession, language)
     }
 
-    override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
+    override fun transform(dataset: Dataset<*>?): Dataset<Row> {
 
-        return dataset?.select(dataset.col("*"),
-                functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+        return dataset?.let {
+            dataset.select(dataset.col("*"),
+                    functions.callUDF(udfName, JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+        } ?: sparkSession.emptyDataFrame()
     }
 
     override fun transformSchema(schema: StructType?): StructType {
