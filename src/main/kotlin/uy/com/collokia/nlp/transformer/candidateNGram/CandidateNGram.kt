@@ -1,3 +1,5 @@
+@file:Suppress("ConvertSecondaryConstructorToPrimary")
+
 package uy.com.collokia.nlp.transformer.candidateNGram
 
 import org.apache.spark.sql.types.DataType

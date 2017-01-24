@@ -26,8 +26,8 @@ class VectorUnaryTransformer() : UnaryTransformer<WrappedArray<Double>, Vector, 
     }
 
     class ConvertFunction : AbstractFunction1<WrappedArray<Double>, Vector>(), Serializable {
-        override fun apply(tokens: WrappedArray<Double>?): Vector? {
-            return Vectors.dense(tokens?.toVector()?.toArray(`ClassTag$`.`MODULE$`.Double()) as DoubleArray)
+        override fun apply(content: WrappedArray<Double>?): Vector? {
+            return Vectors.dense(content?.toVector()?.toArray(`ClassTag$`.`MODULE$`.Double()) as DoubleArray)
         }
     }
 }

@@ -7,9 +7,9 @@ import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
 
-class OwnNGram : PersistableUnaryTransformer<WrappedArray<String>, Array<String>, OwnNGram>() {
-    override fun createTransformFunc(): Function1<WrappedArray<String>, Array<String>>? {
-        return ConvertFunction()
+class NGramInRawInput : PersistableUnaryTransformer<WrappedArray<String>, Array<String>, NGramInRawInput>() {
+    override fun createTransformFunc(): Function1<WrappedArray<String>, Array<String>> {
+        return ConvertFunctionOnRawData()
     }
 
     override fun outputDataType(): DataType? {

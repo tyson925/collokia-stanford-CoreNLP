@@ -19,7 +19,7 @@ import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.tagger.*
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
 import uy.com.collokia.nlp.transformer.candidateNGram.candidateNgramOutputColName
-import uy.com.collokia.nlpTest.util.constructTestDataset
+import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 import uy.com.collokia.nlpTest.util.taggedIndexName
 
 class TaggerTest() {
@@ -59,7 +59,7 @@ class TaggerTest() {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTestDataset(jsc, sparkSession)
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession)
         testCorpus?.let {
             taggerTest(sparkSession, testCorpus)
         }

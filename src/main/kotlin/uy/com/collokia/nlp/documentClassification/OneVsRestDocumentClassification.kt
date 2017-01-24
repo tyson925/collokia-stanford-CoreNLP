@@ -24,7 +24,7 @@ import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
 import uy.com.collokia.nlp.parser.mate.lemmatizer.lemmatizedContentCol
-import uy.com.collokia.nlp.transformer.ngram.OwnNGram
+import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"
 const val LABELS = "./data/model/labelIndexer_2"
@@ -77,7 +77,7 @@ fun generateVTM(corpus: Dataset<Row>,
             corpus = parsedCorpus,
             modelName = VTM_PIPELINE_MODEL_NAME,
             vtmSize = CONTENT_VTM_VOC_SIZE,
-            inputColName = (ngramPipe.stages.last() as OwnNGram).outputCol)
+            inputColName = (ngramPipe.stages.last() as NGramInRawInput).outputCol)
 
 
     val vtm = vtmModel.transform(parsedCorpus).drop(lemmatizedContentCol + "_" + ngramOutputCol,
@@ -108,14 +108,14 @@ fun generateVTM(corpus: Dataset<Row>,
             "title_" + tokenizerOutputCol,
             "title_" + removeOutputCol)
 
-    println("title output colname: " + (titleNgramPipe.stages.last() as OwnNGram).outputCol)
+    println("title output colname: " + (titleNgramPipe.stages.last() as NGramInRawInput).outputCol)
 
     val vtmTitlePipelineModel = loadPipelineModel(isTest = isTest,
             isRunLocal = isRunLocal,
             corpus = parsedCorpusTitle,
             modelName = TITLE_PIPELINE_MODEL_NAME,
             vtmSize = TITLE_VTM_VOC_SIZE,
-            inputColName = (titleNgramPipe.stages.last() as OwnNGram).outputCol)
+            inputColName = (titleNgramPipe.stages.last() as NGramInRawInput).outputCol)
 
 
     val vtmTitleCorpus = vtmTitlePipelineModel.transform(parsedCorpusTitle).drop("title_" + ngramOutputCol,

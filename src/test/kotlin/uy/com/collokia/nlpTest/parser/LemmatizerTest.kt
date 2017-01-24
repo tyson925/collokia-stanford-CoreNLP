@@ -19,7 +19,7 @@ import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedContent
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedSentence
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedToken
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
-import uy.com.collokia.nlpTest.util.constructTestDataset
+import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 import uy.com.collokia.nlpTest.util.lemmatizedIndexName
 import java.io.Serializable
 
@@ -43,7 +43,7 @@ class LemmatizerTest : Serializable {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTestDataset(jsc, sparkSession)
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession)
         testCorpus?.let {
             lemmatizerTest(sparkSession, testCorpus, isStoreToEs = false)
         }

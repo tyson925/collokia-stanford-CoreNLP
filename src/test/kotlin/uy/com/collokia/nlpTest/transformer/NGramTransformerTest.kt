@@ -6,8 +6,9 @@ import uy.com.collokia.common.utils.formatterToTimePrint
 import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
-import uy.com.collokia.nlp.transformer.ngram.OwnNGram
-import uy.com.collokia.nlpTest.util.constructTestDataset
+import uy.com.collokia.nlp.parser.mate.lemmatizer.lemmatizedContentCol
+import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
+import uy.com.collokia.nlpTest.util.constructLemmatizedTestDataset
 import java.io.Serializable
 
 
@@ -20,7 +21,7 @@ class NGramTransformerTest() : Serializable {
                 val test = NGramTransformerTest()
                 val jsc = getLocalSparkContext("text")
                 val sparkSession = getLocalSparkSession("text")
-                val testData = constructTestDataset(jsc,sparkSession)
+                val testData = constructLemmatizedTestDataset(jsc, sparkSession, isRaw = false)
 
                 test.nGramTest(testData)
             }
@@ -28,11 +29,11 @@ class NGramTransformerTest() : Serializable {
         }
     }
 
-    fun nGramTest(dataset : Dataset<Row>) {
-        val ngram = OwnNGram().setInputCol("tokenizedContent")
-
+    fun nGramTest(dataset: Dataset<Row>) {
+        val ngram = NGramOnSentenceData().setInputCol(lemmatizedContentCol)
+        dataset.show(10, false)
         val ngramsContent = ngram.transform(dataset)
-        ngramsContent.show(10,false)
+        ngramsContent.show(10, false)
     }
 
 }

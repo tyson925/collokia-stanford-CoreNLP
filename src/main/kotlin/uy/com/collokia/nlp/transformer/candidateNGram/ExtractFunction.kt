@@ -4,11 +4,14 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import scala.runtime.AbstractFunction1
 import uy.com.collokia.nlp.parser.LANGUAGE
-import uy.com.collokia.nlp.transformer.ngram.number_of_grams
 import java.io.Serializable
 import java.util.*
 
 class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>, Serializable {
+
+    companion object {
+        const val NUMBER_OF_NGRAMS = 3
+    }
 
     val language: LANGUAGE
 
@@ -16,12 +19,12 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
         this.language = language
     }
 
-    override fun apply(tokens: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
-        val sentences = JavaConversions.seqAsJavaList(tokens)
+    override fun apply(content: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
+        val sentences = JavaConversions.seqAsJavaList(content)
         //println(sentences.javaClass.kotlin)
         return sentences.flatMap { sentence ->
             //println(sentence.javaClass.kotlin)
-            wordNGrams(sentence, number_of_grams, true, " ")
+            wordNGrams(sentence, NUMBER_OF_NGRAMS, true, " ")
         }.toTypedArray()
 
     }

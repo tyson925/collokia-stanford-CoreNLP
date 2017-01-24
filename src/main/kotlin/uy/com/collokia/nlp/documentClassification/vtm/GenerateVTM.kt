@@ -17,7 +17,7 @@ import scala.Tuple2
 import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
 import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
-import uy.com.collokia.nlp.transformer.ngram.OwnNGram
+import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
 
 
 @Suppress("UNUSED_VARIABLE")
@@ -41,7 +41,7 @@ fun extractFeaturesFromCorpus(textDataFrame: Dataset<*>,
     val filteredWordsDataFrame = remover.transform(wordsDataFrame)
 
     //val ngramTransformer = NGram().setInputCol("filteredWords").setOutputCol("ngrams").setN(4)
-    val ngramTransformer = OwnNGram().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
+    val ngramTransformer = NGramInRawInput().setInputCol(remover.outputCol).setOutputCol(ngramOutputCol)
 
     //       val ngramsDataFrame = ngramTransformer.transform(filteredWordsDataFrame)
     val ngramsDataFrame = ngramTransformer.transform(wordsDataFrame)
@@ -78,7 +78,7 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
             .setStopWords(stopwordsApplied)
             .setCaseSensitive(false)
 
-    val ngram = OwnNGram().setInputCol(remover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
+    val ngram = NGramInRawInput().setInputCol(remover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
 
     return arrayOf(tokenizer, remover, ngram)
 }
@@ -122,7 +122,7 @@ fun constructVTMPipeline(stopwords: Array<String>,
 
     val tokenizer = ngramPipline[0] as Tokenizer
     val remover = ngramPipline[1] as StopWordsRemover
-    val ngram = ngramPipline[2] as OwnNGram
+    val ngram = ngramPipline[2] as NGramInRawInput
 
     val vtm = constructVTM(vocabSize, ngram.outputCol)
 
