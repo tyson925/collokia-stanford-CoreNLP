@@ -4,20 +4,17 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
-import scala.collection.JavaConversions
-import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
 import uy.com.collokia.common.utils.deleteFileIfExist
 import uy.com.collokia.common.utils.formatterToTimePrint
 import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.*
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.PARSER_TYPE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
 import uy.com.collokia.nlp.parser.mate.parser.MateParser
-import uy.com.collokia.nlp.parser.mate.parser.ParsedContent
-import uy.com.collokia.nlp.parser.mate.parser.ParsedSentence
-import uy.com.collokia.nlp.parser.mate.parser.ParsedToken
 import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
+import uy.com.collokia.nlp.parser.toNLPContentRDD
 import uy.com.collokia.nlpTest.util.PARSED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 
@@ -28,8 +25,8 @@ class ParserTest() {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {
                 val test = ParserTest()
-                //test.writeParsedContentToES()
-                test.parseEducarCorpus()
+                test.writeParsedContentToES()
+                //test.parseEducarCorpus()
             }
             println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
@@ -38,18 +35,11 @@ class ParserTest() {
     fun parserTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
         val parser = MateParser(sparkSession)
-        val parsedContent = parser.transform(testCorpus).toJavaRDD().map { row ->
-            println(row.schema())
-            val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
-            ParsedContent(parsedSentences.map { sentence ->
+        val parsedContent = parser.transform(testCorpus)
 
-                ParsedSentence(JavaConversions.asJavaCollection(sentence).map { token ->
-                    ParsedToken(token.apply(0), token.apply(1), token.apply(2), token.apply(3), token.apply(4).toInt())
-                })
-            })
-        }
+        val parsedContentRDD = toNLPContentRDD(parsedContent,PARSER_TYPE.PARSER)
 
-        val parsedDataset = parsedContent?.convertRDDToDF(sparkSession)
+        val parsedDataset = parsedContentRDD.convertRDDToDF(sparkSession)
         JavaEsSparkSQL.saveToEs(parsedDataset, "$PARSED_INDEX_NAME/parsedContent")
     }
 

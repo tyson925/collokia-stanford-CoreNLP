@@ -3,13 +3,16 @@
 package uy.com.collokia.nlp.parser
 
 
+import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.MapType
-import org.apache.spark.sql.types.StructType
+import scala.collection.JavaConversions
+import scala.collection.immutable.HashMap
+import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.stackoverflow.SoLitleModel.SOThreadExtractValues
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizerRaw
@@ -19,17 +22,22 @@ import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
 import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
 import java.io.Serializable
 
-data class NLPToken(var index: Int, var token: String, var lemma: String?, var posTag: String?,
-                    var indexInContent: Int, var parseTag: String?, var parseIndex: Int?) : Serializable, scala.Equals {
-
-    override fun canEqual(p0: Any?): Boolean {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+interface NLPToken : Serializable {
+    var index: Int
+    var token: String
+    var lemma: String
+    var indexInContent: Int
 }
 
-data class NLPSentence(var lemmatizedSentence: List<NLPToken>) : Serializable
+data class LemmaToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int) : Serializable,NLPToken
 
-data class NLPContent(var lemmatizedContent: List<NLPSentence>) : Serializable
+data class PosToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int, var posTag: String) :Serializable, NLPToken
+
+data class ParseToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int, var posTag: String, var parseTag: String, var parseIndex: Int) :Serializable, NLPToken
+
+data class NLPSentence(var Sentence: List<NLPToken>) : Serializable
+
+data class NLPContent(var Content: List<NLPSentence>) : Serializable
 
 enum class PARSER_TYPE {
     TOKENIZER, LEMMATIZER, POSTAGGER, PARSER
@@ -41,27 +49,47 @@ enum class LANGUAGE {
 
 const val DEFAULT_NGRAM_SEPARATOR = "-"
 
-fun lemmaType() : StructType {
-    val token = DataTypes.createStructField("token", DataTypes.StringType, true)
-    val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, true)
-    return DataTypes.createStructType(listOf(token, lemma))
-}
 
 fun nlpTokenType(): MapType {
-    val index = DataTypes.createStructField("index", DataTypes.IntegerType, true)
-    val token = DataTypes.createStructField("token", DataTypes.StringType, true)
-    val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, true)
-    val posTag = DataTypes.createStructField("posTag", DataTypes.StringType, true)
-    val indexInContent = DataTypes.createStructField("indexInContent", DataTypes.IntegerType, true)
-    val parseTag = DataTypes.createStructField("parseTag", DataTypes.StringType, true)
-    val parseIndex = DataTypes.createStructField("parseIndex", DataTypes.IntegerType, true)
 
-    val map = DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType)
-
-    //return DataTypes.createStructType(listOf(index, token, lemma, posTag, indexInContent, parseTag, parseIndex))
-    return map
-
+    return DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType)
 }
+
+fun toNLPContentRDD(dataset: Dataset<Row>,parserType: PARSER_TYPE) : JavaRDD<NLPContent> {
+    return dataset.toJavaRDD().map { row ->
+        val parsedSentences = row.getList<WrappedArray<HashMap<String, String>>>(3)
+        NLPContent(parsedSentences.map { sentence ->
+            NLPSentence(JavaConversions.asJavaCollection(sentence).map { map ->
+                getToken(map,parserType)
+            })
+        })
+    }
+}
+
+fun getToken(map: scala.collection.immutable.HashMap<String, String>, parserType: PARSER_TYPE): NLPToken {
+
+    return if (parserType == PARSER_TYPE.LEMMATIZER) {
+        LemmaToken(index = map[NLPToken::index.name].get().toInt(),
+                token = map[NLPToken::token.name].get(),
+                lemma = map[NLPToken::lemma.name].get(),
+                indexInContent = map[NLPToken::indexInContent.name].get().toInt())
+    } else if (parserType == PARSER_TYPE.POSTAGGER) {
+        PosToken(index = map[NLPToken::index.name].get().toInt(),
+                token = map[NLPToken::token.name].get(),
+                lemma = map[NLPToken::lemma.name].get(),
+                indexInContent = map[NLPToken::indexInContent.name].get().toInt(),
+                posTag = map[PosToken::posTag.name].get())
+    } else {
+        ParseToken(index = map[NLPToken::index.name].get().toInt(),
+                token = map[NLPToken::token.name].get(),
+                lemma = map[NLPToken::lemma.name].get(),
+                indexInContent = map[NLPToken::indexInContent.name].get().toInt(),
+                posTag = map[PosToken::posTag.name].get(),
+                parseTag = map[ParseToken::parseTag.name].get(),
+                parseIndex = map[ParseToken::parseIndex.name].get().toInt())
+    }
+}
+
 
 fun tokenizeContent(sparkSession: SparkSession,
                     dataset: Dataset<Row>,

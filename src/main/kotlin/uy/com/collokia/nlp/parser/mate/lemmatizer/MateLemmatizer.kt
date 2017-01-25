@@ -16,12 +16,11 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
-import scala.Product
-import scala.collection.Iterator
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.NLPToken
 import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
@@ -36,43 +35,6 @@ val englishLemmatizerModelName: String  by lazy {
 val spanishLemmatizerModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_ES).absolutePath
 }
-
-data class LemmatizedToken(var token: String, var lemma: String) : Serializable, Product {
-    override fun productArity(): Int {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun productElement(p0: Int): Any {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun productPrefix(): String {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun productIterator(): Iterator<Any> {
-        //return JavaConversions.asScalaIterator(LemmatizedToken::class.members.iterator())
-        //return JavaConversions.asScalaIterator(LemmatizedToken::class.members.map { member -> member.name }.iterator())
-        return JavaConversions.asScalaIterator(listOf(this.token,this.lemma).iterator())
-    }
-
-    override fun canEqual(p0: Any?): Boolean {
-        return if (p0 is LemmatizedToken){
-            val lemmatizedToken = p0 as LemmatizedToken
-            if (lemmatizedToken.lemma == this.lemma && lemmatizedToken.token == this.token){
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-}
-
-data class LemmatizedSentence(var lemmatizedSentence: List<LemmatizedToken>) : Serializable
-
-data class LemmatizedContent(var lemmatizedContent: List<LemmatizedSentence>) : Serializable
 
 class MateLemmatizer : Transformer, Serializable {
 
@@ -100,7 +62,7 @@ class MateLemmatizer : Transformer, Serializable {
 
         val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
             val lemmatizer = lemmatizerWrapper.get()
-            val results = ArrayList<Array<Map<String,String>>>(sentences.size())
+            val results = ArrayList<Array<Map<String, String>>>(sentences.size())
 
             (0..sentences.size() - 1).forEach { sentenceNum ->
 
@@ -117,21 +79,20 @@ class MateLemmatizer : Transformer, Serializable {
                 lemmatizer.apply(lemmatized)
                 val lemmas = lemmatized.plemmas
 
+                val contentIndex = results.map { sentence -> sentence.size }.sum()
+
                 val lemmatizedTokens = sentenceArray.mapIndexed { tokenIndex, token ->
 
-                    val values = mapOf("index" to tokenIndex.toString(),
-                    "token" to (token ?: ""),
-                    "lemma" to lemmas[tokenIndex],
-                    "indexInContent" to tokenIndex.toString()
-                    //"posTag" to "",
-                    //"parseTag" to "",
-                    //"parseIndex" to ""
+                    val values = mapOf(
+                            NLPToken::index.name to tokenIndex.toString(),
+                            NLPToken::token.name to (token ?: ""),
+                            NLPToken::lemma.name to lemmas[tokenIndex],
+                            NLPToken::indexInContent.name to (contentIndex + tokenIndex).toString()
                     )
                     values
                 }.toTypedArray()
 
                 results.add(sentenceNum, lemmatizedTokens)
-                //results.add(sentenceNum, lemmas[tokenIndex])
             }
             results
         })

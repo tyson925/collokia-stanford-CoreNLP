@@ -7,7 +7,6 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
 import scala.collection.JavaConversions
-import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.elasticSearch.readSoContentFromEs
 import uy.com.collokia.common.utils.formatterToTimePrint
 import uy.com.collokia.common.utils.measureTimeInMillis
@@ -16,7 +15,9 @@ import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.PARSER_TYPE
 import uy.com.collokia.nlp.parser.mate.tagger.*
+import uy.com.collokia.nlp.parser.toNLPContentRDD
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
 import uy.com.collokia.nlp.transformer.candidateNGram.candidateNgramOutputColName
 import uy.com.collokia.nlpTest.util.TAGGED_INDEX_NAME
@@ -27,9 +28,9 @@ class TaggerTest() {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {
                 val test = TaggerTest()
-                //test.writeTaggedContentToES()
-                val corpus = test.readTaggedContentFromES()
-                test.candidateExtractorTest(corpus)
+                test.writeTaggedContentToES()
+                //val corpus = test.readTaggedContentFromES()
+                //test.candidateExtractorTest(corpus)
             }
             println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
@@ -38,19 +39,10 @@ class TaggerTest() {
     fun taggerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
         val tagger = MateTagger(sparkSession)
-        val taggedContent = tagger.transform(testCorpus).toJavaRDD().map { row ->
-            println(row.schema())
-            val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
-            TaggedContent(parsedSentences.map { sentence ->
+        val taggedContent = tagger.transform(testCorpus)
+        val taggedRDD = toNLPContentRDD(taggedContent, PARSER_TYPE.POSTAGGER)
 
-                TaggedSentence(JavaConversions.asJavaCollection(sentence).map { token ->
-                    TaggedToken(token.apply(0), token.apply(1), token.apply(2))
-                })
-            })
-        }
-
-        //println(lemmatized?.collect()?.joinToString("\n"))
-        val taggedDataset = taggedContent?.convertRDDToDF(sparkSession)
+        val taggedDataset = taggedRDD.convertRDDToDF(sparkSession)
         JavaEsSparkSQL.saveToEs(taggedDataset, "$TAGGED_INDEX_NAME/taggedContent")
     }
 
@@ -60,9 +52,8 @@ class TaggerTest() {
 
 
         val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
-        testCorpus?.let {
-            taggerTest(sparkSession, testCorpus)
-        }
+        taggerTest(sparkSession, testCorpus)
+
         closeSpark(jsc)
     }
 

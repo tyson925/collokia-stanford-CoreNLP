@@ -19,9 +19,12 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.NLPToken
+import uy.com.collokia.nlp.parser.PosToken
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
+import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
@@ -78,7 +81,7 @@ class MateTagger : Transformer, Serializable {
             val posTagger = taggerWrapper.get()
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
-            val results = ArrayList<Array<Array<String>>>(sentencesJava.size)
+            val results = ArrayList<Array<Map<String,String>>>(sentences.size())
 
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
@@ -96,8 +99,17 @@ class MateTagger : Transformer, Serializable {
                 val tagged = posTagger.tag(lemmatized)
                 val posses = tagged.ppos
 
+                val contentIndex = results.map { sentence -> sentence.size }.sum()
+
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    arrayOf(token ?: "", lemmas[tokenIndex], posses[tokenIndex])
+                    val values = mapOf(
+                            NLPToken::index.name to tokenIndex.toString(),
+                            NLPToken::token.name to (token ?: ""),
+                            NLPToken::lemma.name to lemmas[tokenIndex],
+                            NLPToken::indexInContent.name to (contentIndex + tokenIndex).toString(),
+                            PosToken::posTag.name to posses[tokenIndex]
+                    )
+                    values
                 }.toTypedArray()
 
                 results.add(sentenceNum,taggedValues)
@@ -105,7 +117,7 @@ class MateTagger : Transformer, Serializable {
             results
         })
 
-        this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+        this.sparkSession.udf().register(udfName, tagger, DataTypes.createArrayType(DataTypes.createArrayType(nlpTokenType())))
     }
 
 

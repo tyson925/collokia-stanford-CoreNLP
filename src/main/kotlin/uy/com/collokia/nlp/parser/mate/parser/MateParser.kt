@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlp.parser.mate.parser
 
 import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_ES
@@ -16,7 +18,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
-import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.*
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
 import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
 import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
@@ -24,7 +26,6 @@ import uy.com.collokia.nlp.parser.mate.tagger.TaggerWrapper
 import uy.com.collokia.nlp.parser.mate.tagger.englishTaggerModelName
 import uy.com.collokia.nlp.parser.mate.tagger.spanishTaggerModelName
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
-import java.io.Serializable
 import java.util.*
 
 //const val englishParserModelName = "./data/mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.parser.model"
@@ -36,12 +37,6 @@ val englishParserModelName: String by lazy {
 val spanishParsedModelName: String by lazy {
     ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_ES).absolutePath
 }
-
-data class ParsedToken(var token: String, var lemma: String, var posTag: String, var parse: String, var head: Int) : Serializable
-
-data class ParsedSentence(var parsedSentence: List<ParsedToken>) : Serializable
-
-data class ParsedContent(var parsedContent: List<ParsedSentence>) : Serializable
 
 
 class MateParser : Transformer {
@@ -78,7 +73,7 @@ class MateParser : Transformer {
             val parser = parserWrapper.get()
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 80 }
-            val results = ArrayList<Array<Array<String>>>(sentencesJava.size)
+            val results = ArrayList<Array<Map<String,String>>>(sentences.size())
 
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
@@ -101,15 +96,19 @@ class MateParser : Transformer {
                 val parses = parsed.plabels
                 val heads = parsed.pheads
 
+                val contentIndex = results.map { sentence -> sentence.size }.sum()
 
                 val taggedValues = sentenceArray.mapIndexed { tokenIndex, token ->
-                    //val parserIndex = tokenIndex - 1
-                    arrayOf(
-                            token ?: "",
-                            lemmas[tokenIndex] ?: "",
-                            posses[tokenIndex] ?: "",
-                            if (tokenIndex == 0 || tokenIndex > parses.size) "root" else parses[tokenIndex - 1] ?: "",
-                            if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex - 1].toString())
+                    val values = mapOf(
+                            NLPToken::index.name to tokenIndex.toString(),
+                            NLPToken::token.name to (token ?: ""),
+                            NLPToken::lemma.name to lemmas[tokenIndex],
+                            NLPToken::indexInContent.name to (contentIndex + tokenIndex).toString(),
+                            PosToken::posTag.name to posses[tokenIndex],
+                            ParseToken::parseTag.name to if (tokenIndex == 0 || tokenIndex > parses.size) "root" else parses[tokenIndex - 1] ?: "",
+                            ParseToken::parseIndex.name to if (tokenIndex == 0 || tokenIndex > heads.size) "0" else heads[tokenIndex - 1].toString()
+                    )
+                    values
                 }.toTypedArray()
 
                 results.add(sentenceNum, taggedValues)
@@ -117,7 +116,7 @@ class MateParser : Transformer {
             results
         })
 
-        sparkSession.udf().register(udfName, parserUDF, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
+        sparkSession.udf().register(udfName, parserUDF, DataTypes.createArrayType(DataTypes.createArrayType(nlpTokenType())))
 
     }
 
