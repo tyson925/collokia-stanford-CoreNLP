@@ -16,10 +16,13 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
+import scala.Product
+import scala.collection.Iterator
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 import java.io.Serializable
 import java.util.*
@@ -34,7 +37,38 @@ val spanishLemmatizerModelName: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_ES).absolutePath
 }
 
-data class LemmatizedToken(var token: String, var lemma: String) : Serializable
+data class LemmatizedToken(var token: String, var lemma: String) : Serializable, Product {
+    override fun productArity(): Int {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun productElement(p0: Int): Any {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun productPrefix(): String {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun productIterator(): Iterator<Any> {
+        //return JavaConversions.asScalaIterator(LemmatizedToken::class.members.iterator())
+        //return JavaConversions.asScalaIterator(LemmatizedToken::class.members.map { member -> member.name }.iterator())
+        return JavaConversions.asScalaIterator(listOf(this.token,this.lemma).iterator())
+    }
+
+    override fun canEqual(p0: Any?): Boolean {
+        return if (p0 is LemmatizedToken){
+            val lemmatizedToken = p0 as LemmatizedToken
+            if (lemmatizedToken.lemma == this.lemma && lemmatizedToken.token == this.token){
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
 
 data class LemmatizedSentence(var lemmatizedSentence: List<LemmatizedToken>) : Serializable
 
@@ -46,21 +80,15 @@ class MateLemmatizer : Transformer, Serializable {
     var inputColName: String
     var outputColName: String
     val sparkSession: SparkSession
-    val isRawOutput: Boolean
-    val isRawInput: Boolean
     var language: LANGUAGE
     val udfName = "lemmatizer"
 
     constructor(sparkSession: SparkSession,
-                isRawOutput: Boolean,
-                isRawInput: Boolean,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = tokenizedContent,
                 outputColName: String = lemmatizedContentCol) {
 
         this.sparkSession = sparkSession
-        this.isRawOutput = isRawOutput
-        this.isRawInput = isRawInput
         this.language = language
         val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
         val options = arrayOf("-model", lemmatizerModel)
@@ -69,9 +97,15 @@ class MateLemmatizer : Transformer, Serializable {
         this.inputColName = inputColName
         this.outputColName = outputColName
 
-        if (isRawInput) {
-            val rawLemmatizer = UDF1({ tokens: WrappedArray<String> ->
-                val lemmatizer = lemmatizerWrapper.get()
+
+        val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
+            val lemmatizer = lemmatizerWrapper.get()
+            val results = ArrayList<Array<Map<String,String>>>(sentences.size())
+
+            (0..sentences.size() - 1).forEach { sentenceNum ->
+
+                val tokens = sentences.apply(sentenceNum)
+
                 val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
 
                 sentenceArray[0] = "<root>"
@@ -80,55 +114,31 @@ class MateLemmatizer : Transformer, Serializable {
 
                 val lemmatized = SentenceData09()
                 lemmatized.init(sentenceArray)
+                lemmatizer.apply(lemmatized)
+                val lemmas = lemmatized.plemmas
 
-                if (this.isRawOutput) {
-                    lemmatizer.apply(lemmatized).plemmas.joinToString(" ")
-                } else {
-                    lemmatizer.apply(lemmatized).plemmas.toList()
-                }
-            })
+                val lemmatizedTokens = sentenceArray.mapIndexed { tokenIndex, token ->
 
-            if (isRawOutput) {
-                sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.StringType)
-            } else {
-                sparkSession.udf().register(udfName, rawLemmatizer, DataTypes.createArrayType(DataTypes.StringType))
+                    val values = mapOf("index" to tokenIndex.toString(),
+                    "token" to (token ?: ""),
+                    "lemma" to lemmas[tokenIndex],
+                    "indexInContent" to tokenIndex.toString()
+                    //"posTag" to "",
+                    //"parseTag" to "",
+                    //"parseIndex" to ""
+                    )
+                    values
+                }.toTypedArray()
+
+                results.add(sentenceNum, lemmatizedTokens)
+                //results.add(sentenceNum, lemmas[tokenIndex])
             }
-        } else {
-            val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
-                val lemmatizer = lemmatizerWrapper.get()
-                //val results = arrayOfNulls<Array<Row>>(sentences.size())
-                val results = ArrayList<Array<Array<String>>>(sentences.size())
+            results
+        })
+        //val outputType = outputType(false)
 
-                (0..sentences.size() - 1).forEach { sentenceNum ->
+        sparkSession.udf().register(udfName, lemmatizerUDF, DataTypes.createArrayType(DataTypes.createArrayType(nlpTokenType())))
 
-                    val tokens = sentences.apply(sentenceNum)
-
-                    val sentenceArray = arrayOfNulls<String>(tokens.size() + 1) // according to the "root"
-
-                    sentenceArray[0] = "<root>"
-
-                    (0..tokens.size() - 1).forEach { i -> sentenceArray[i + 1] = tokens.apply(i) }
-
-                    val lemmatized = SentenceData09()
-                    lemmatized.init(sentenceArray)
-                    lemmatizer.apply(lemmatized)
-                    val lemmas = lemmatized.plemmas
-
-                    val lemmatizedTokens = sentenceArray.mapIndexed { tokenIndex, token ->
-                        arrayOf(token ?: "", lemmas[tokenIndex])
-                        //RowFactory.create(token ?: "", lemmas[tokenIndex])
-                        //LemmatizedToken(token ?: "", lemmas[tokenIndex])
-                    }.toTypedArray()
-
-                    results.add(sentenceNum, lemmatizedTokens)
-                }
-                results
-            })
-            val outputType = outputType(false)
-
-            sparkSession.udf().register(udfName, lemmatizerUDF, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType))))
-            //sparkSession.udf().register(udfName, lemmatizerUDF, outputType.dataType())
-        }
     }
 
 
@@ -147,12 +157,12 @@ class MateLemmatizer : Transformer, Serializable {
     }
 
     override fun copy(p0: ParamMap?): Transformer {
-        return MateLemmatizer(sparkSession, isRawOutput, isRawInput, language, inputColName, outputColName)
+        return MateLemmatizer(sparkSession, language, inputColName, outputColName)
     }
 
     override fun transform(dataset: Dataset<*>?): Dataset<Row> {
 
-        val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
+        //val outputDataType = transformSchema(dataset?.schema()).apply(outputColName).metadata()
 
         return dataset?.let {
             dataset.select(dataset.col("*"),
@@ -171,20 +181,18 @@ class MateLemmatizer : Transformer, Serializable {
         val nullable = inputType?.nullable() ?: false
         val output = outputType(nullable)
         return SchemaUtils.appendColumn(schema, output)
+        //return SchemaUtils.appendColumn(schema, DataTypes.createStructField(outputColName, DataTypes.StringType, nullable))
     }
 
     private fun outputType(nullable: Boolean): StructField {
-        val token = DataTypes.createStructField("token", DataTypes.StringType, nullable)
-        val lemma = DataTypes.createStructField("lemma", DataTypes.StringType, nullable)
-        val output = DataTypes.createStructField(outputColName, DataTypes.createArrayType(DataTypes.createStructType(listOf(token, lemma))), nullable)
-        return output
+        return DataTypes.createStructField(outputColName, nlpTokenType(), nullable)
     }
 
-    private fun outputType(schema: StructType?): StructField {
+    /*private fun outputType(schema: StructType?): StructField {
         val inputType = schema?.apply(schema.fieldIndex(inputColName))
         val nullable = inputType?.nullable() ?: false
         return outputType(nullable)
-    }
+    }*/
 
 
 }

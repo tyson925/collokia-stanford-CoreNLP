@@ -19,8 +19,8 @@ import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.mate.tagger.*
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
 import uy.com.collokia.nlp.transformer.candidateNGram.candidateNgramOutputColName
+import uy.com.collokia.nlpTest.util.TAGGED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
-import uy.com.collokia.nlpTest.util.taggedIndexName
 
 class TaggerTest() {
     companion object {
@@ -38,7 +38,7 @@ class TaggerTest() {
     fun taggerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
         val tagger = MateTagger(sparkSession)
-        val taggedContent = tagger.transform(testCorpus)?.toJavaRDD()?.map { row ->
+        val taggedContent = tagger.transform(testCorpus).toJavaRDD().map { row ->
             println(row.schema())
             val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
             TaggedContent(parsedSentences.map { sentence ->
@@ -51,7 +51,7 @@ class TaggerTest() {
 
         //println(lemmatized?.collect()?.joinToString("\n"))
         val taggedDataset = taggedContent?.convertRDDToDF(sparkSession)
-        JavaEsSparkSQL.saveToEs(taggedDataset, "$taggedIndexName/taggedContent")
+        JavaEsSparkSQL.saveToEs(taggedDataset, "$TAGGED_INDEX_NAME/taggedContent")
     }
 
     fun writeTaggedContentToES() {
@@ -59,7 +59,7 @@ class TaggerTest() {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession)
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
         testCorpus?.let {
             taggerTest(sparkSession, testCorpus)
         }
@@ -83,7 +83,7 @@ class TaggerTest() {
         jsc.appName()
 
         val sparkSession = getLocalSparkSession("ES test")
-        val documents = readSoContentFromEs(sparkSession, taggedIndexName)
+        val documents = readSoContentFromEs(sparkSession, TAGGED_INDEX_NAME)
 
 
         val res = documents.toJavaRDD().map { row ->

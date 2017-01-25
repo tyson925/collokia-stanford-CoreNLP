@@ -25,7 +25,7 @@ class TestTokenizer() : Serializable {
                 val testCorpus = jsc.parallelize(testList).convertRDDToDF(sparkSession)
                 val tokenizer = OpenNlpTokenizer(sparkSession, TestDocument::content.name, LANGUAGE.SPANISH, isOutputRaw = false)
 
-                val tokenized = tokenizer.transform(testCorpus)!!
+                val tokenized = tokenizer.transform(testCorpus)
 
                 tokenized.show(false)
             }

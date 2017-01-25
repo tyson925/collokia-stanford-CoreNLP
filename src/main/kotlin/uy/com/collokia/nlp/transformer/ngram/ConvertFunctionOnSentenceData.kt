@@ -3,7 +3,7 @@ package uy.com.collokia.nlp.transformer.ngram
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import scala.runtime.AbstractFunction1
-import uy.com.collokia.nlp.transformer.candidateNGram.ExtractFunction
+import uy.com.collokia.nlp.parser.DEFAULT_NGRAM_SEPARATOR
 import java.io.Serializable
 import java.util.*
 
@@ -21,12 +21,12 @@ class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArra
         //println(sentences.javaClass.kotlin)
         return sentences.map { sentence ->
             //println(sentence.javaClass.kotlin)
-            wordNGrams(sentence, ExtractFunction.NUMBER_OF_NGRAMS, true, separator = "_")
+            wordNGrams(sentence, NUMBER_OF_NGRAMS, true, separator = DEFAULT_NGRAM_SEPARATOR)
         }.toTypedArray()
 
     }
 
-    fun wordNGrams(sentence: WrappedArray<WrappedArray<String>>, N: Int, oneToN: Boolean, separator: String = "_"): Array<Array<String>> {
+    fun wordNGrams(sentence: WrappedArray<WrappedArray<String>>, N: Int, oneToN: Boolean, separator: String = DEFAULT_NGRAM_SEPARATOR): Array<Array<String>> {
         val RET = LinkedList<Array<String>>()
 
         for (i in (if (oneToN) 1 else N)..N + 1 - 1) {
@@ -44,7 +44,7 @@ class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArra
      * *
      * @return
      */
-    private fun wordNGramsLevel(tokensInfo: List<WrappedArray<String>>, N: Int, separator: String = "_"): List<Array<String>> {
+    private fun wordNGramsLevel(tokensInfo: List<WrappedArray<String>>, N: Int, separator: String = DEFAULT_NGRAM_SEPARATOR): List<Array<String>> {
         val RET: MutableList<Array<String>>
 
         if (N < 2) {

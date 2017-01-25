@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlpTest.parser
 
 import org.apache.spark.SparkConf
@@ -15,12 +17,10 @@ import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedContent
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedSentence
-import uy.com.collokia.nlp.parser.mate.lemmatizer.LemmatizedToken
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
+import uy.com.collokia.nlp.parser.mate.lemmatizer.*
+import uy.com.collokia.nlpTest.util.LEMMATIZED_INDEX_NAME
+import uy.com.collokia.nlpTest.util.RAW_LEMMATIZED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
-import uy.com.collokia.nlpTest.util.lemmatizedIndexName
 import java.io.Serializable
 
 
@@ -43,33 +43,48 @@ class LemmatizerTest : Serializable {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession)
-        testCorpus?.let {
-            lemmatizerTest(sparkSession, testCorpus, isStoreToEs = false)
-        }
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = true)
+
+        //lemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+        rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+
         closeSpark(jsc)
     }
 
     fun lemmatizerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>, isStoreToEs: Boolean) {
 
-        val tagger = MateLemmatizer(sparkSession, isRawInput = false, isRawOutput = false)
-        val lemmatized = tagger.transform(testCorpus)!!
+        val lemmatizer = MateLemmatizer(sparkSession)
+        val lemmatized = lemmatizer.transform(testCorpus)
+
+        lemmatized.show(10,false)
 
         val lemmatizedRDD = lemmatized.toJavaRDD().map { row ->
             println(row.schema())
-            val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
+            val parsedSentences = row.getList<WrappedArray<scala.collection.immutable.HashMap<String, String>>>(3)
             LemmatizedContent(parsedSentences.map { sentence ->
 
-                LemmatizedSentence(JavaConversions.asJavaCollection(sentence).map { token ->
-                    LemmatizedToken(token.apply(0), token.apply(1))
+                LemmatizedSentence(JavaConversions.asJavaCollection(sentence).map { map ->
+                    LemmatizedToken(map["token"].get(), map["lemma"].get())
                 })
             })
         }
 
         if (isStoreToEs) {
-            //println(lemmatized?.collect()?.joinToString("\n"))
             val lemmatizedDataset = lemmatizedRDD.convertRDDToDF(sparkSession)
-            JavaEsSparkSQL.saveToEs(lemmatizedDataset, "$lemmatizedIndexName/lemmatizedContent")
+            JavaEsSparkSQL.saveToEs(lemmatizedDataset, "$LEMMATIZED_INDEX_NAME/lemmatizedContent")
+            //lemmatized?.show(10, false)
+        }
+    }
+
+    fun rawLemmatizerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>, isStoreToEs: Boolean) {
+        val lemmatizer = MateLemmatizerRaw(sparkSession, isRawOutput = true)
+        val lemmatizedDataset = lemmatizer.transform(testCorpus)
+
+        lemmatizedDataset.show(10,false)
+
+        if (isStoreToEs) {
+
+            JavaEsSparkSQL.saveToEs(lemmatizedDataset, "$RAW_LEMMATIZED_INDEX_NAME/lemmatizedContent")
             //lemmatized?.show(10, false)
         }
     }
@@ -92,7 +107,7 @@ class LemmatizerTest : Serializable {
         jsc.appName()
 
         val sparkSession = getLocalSparkSession("ES test")
-        val documents = readSoContentFromEs(sparkSession, lemmatizedIndexName)
+        val documents = readSoContentFromEs(sparkSession, LEMMATIZED_INDEX_NAME)
         documents.show(10, false)
 
     }

@@ -18,8 +18,8 @@ import uy.com.collokia.nlp.parser.mate.parser.ParsedContent
 import uy.com.collokia.nlp.parser.mate.parser.ParsedSentence
 import uy.com.collokia.nlp.parser.mate.parser.ParsedToken
 import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
+import uy.com.collokia.nlpTest.util.PARSED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
-import uy.com.collokia.nlpTest.util.parsedIndexName
 
 class ParserTest() {
     companion object {
@@ -38,7 +38,7 @@ class ParserTest() {
     fun parserTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
         val parser = MateParser(sparkSession)
-        val parsedContent = parser.transform(testCorpus)?.toJavaRDD()?.map { row ->
+        val parsedContent = parser.transform(testCorpus).toJavaRDD().map { row ->
             println(row.schema())
             val parsedSentences = row.getList<WrappedArray<WrappedArray<String>>>(3)
             ParsedContent(parsedSentences.map { sentence ->
@@ -50,7 +50,7 @@ class ParserTest() {
         }
 
         val parsedDataset = parsedContent?.convertRDDToDF(sparkSession)
-        JavaEsSparkSQL.saveToEs(parsedDataset, "$parsedIndexName/parsedContent")
+        JavaEsSparkSQL.saveToEs(parsedDataset, "$PARSED_INDEX_NAME/parsedContent")
     }
 
     fun writeParsedContentToES() {
@@ -58,33 +58,33 @@ class ParserTest() {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession)
-        testCorpus?.let {
-            parserTest(sparkSession, testCorpus)
-        }
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+
+        parserTest(sparkSession, testCorpus)
+
         closeSpark(jsc)
     }
 
     fun parseEducarCorpus() {
-        val jsc = getLocalSparkContext("educar",cores = 4)
+        val jsc = getLocalSparkContext("educar", cores = 4)
         val sparkSession = getLocalSparkSession("educar")
 
         val corpus = jsc.textFile(EDUCAR_CORPUS).map { line ->
             OBJECT_MAPPER.readValue(line, SimpleDocument::class.java)
         }.convertRDDToDF(sparkSession).toDF()
         println(corpus.count())
-        corpus.show(10,false)
+        corpus.show(10, false)
 
         //val document = La jornada se realiza con motivo del 30° aniversario del Área Educación de FLACSO. Por este motivo invitan a aquellos investigadores en formación que quieran dar a conocer sus trabajos, a enviar sus resúmenes.
 
-        val tokenizer = OpenNlpTokenizer(sparkSession,SimpleDocument::content.name, LANGUAGE.SPANISH,isOutputRaw = false)
-        val lemmatizer = MateLemmatizer(sparkSession,isRawOutput = false,isRawInput = false,inputColName = tokenizer.outputColName,language = LANGUAGE.SPANISH)
+        val tokenizer = OpenNlpTokenizer(sparkSession, SimpleDocument::content.name, LANGUAGE.SPANISH, isOutputRaw = false)
+        val lemmatizer = MateLemmatizer(sparkSession, inputColName = tokenizer.outputColName, language = LANGUAGE.SPANISH)
 
         val tokenized = tokenizer.transform(corpus)
 //tokenized?.show(4000)
 
-        val lemmatized = lemmatizer.transform(tokenized)!!
-        lemmatized?.show(false)
+        val lemmatized = lemmatizer.transform(tokenized)
+        lemmatized.show(false)
         //val postTagedCorpus = lemmatizeContent(sparkSession, corpus, SimpleDocument::content.name, LANGUAGE.SPANISH)
         //postTagedCorpus?.show(false)
         deleteFileIfExist(EDUCAR_PARSED_CORPUS)

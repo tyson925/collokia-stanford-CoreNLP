@@ -74,7 +74,7 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
     /**
      * The {@link EndOfSentenceScanner} to use when scanning for end of sentence offsets.
      */
-    private val scanner: EndOfSentenceScanner;
+    private val scanner: EndOfSentenceScanner
 
     /**
      * The list of probabilities associated with each decision.
@@ -89,11 +89,11 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
      * @param model the {@link SentenceModel}
      */
     constructor(model: SentenceModel) {
-        val sdFactory = model.factory;
-        this.model = model.maxentModel;
-        cgen = sdFactory.sdContextGenerator;
-        scanner = sdFactory.endOfSentenceScanner;
-        this.useTokenEnd = sdFactory.isUseTokenEnd;
+        val sdFactory = model.factory
+        this.model = model.maxentModel
+        this.cgen = sdFactory.sdContextGenerator
+        this.scanner = sdFactory.endOfSentenceScanner
+        this.useTokenEnd = sdFactory.isUseTokenEnd
     }
 
     /**
@@ -114,7 +114,7 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
                     getAbbreviations(model.abbreviations), customEOSCharacters)
             scanner = factory.createEndOfSentenceScanner(customEOSCharacters)
         }
-        useTokenEnd = model.useTokenEnd();
+        useTokenEnd = model.useTokenEnd()
     }
 
 
@@ -161,7 +161,7 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
         val sentProbs = ArrayList<Double>()
         val sb = StringBuffer(s)
         val enders = scanner.getPositions(s)
-        val positions = ArrayList<Integer>(enders.size)
+        val positions = ArrayList<Int>(enders.size)
 
         var index = 0
         for (i in 0 until enders.size) {
@@ -174,15 +174,15 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
                 continue
             }
 
-            var probs = model.eval(cgen.getContext(sb, cint))
-            var bestOutcome = model.getBestOutcome(probs)
+            val probs = model.eval(cgen.getContext(sb, cint))
+            val bestOutcome = model.getBestOutcome(probs)
 
             if (bestOutcome.equals(SPLIT) && isAcceptableBreak(s, index, cint)) {
                 if (index != cint) {
                     if (useTokenEnd) {
-                        positions.add(Integer(getFirstNonWS(s, getFirstWS(s, cint + 1))))
+                        positions.add(Integer(getFirstNonWS(s, getFirstWS(s, cint + 1))).toInt())
                     } else {
-                        positions.add(Integer(getFirstNonWS(s, cint)))
+                        positions.add(Integer(getFirstNonWS(s, cint)).toInt())
                     }
                     sentProbs.add(probs[model.getIndex(bestOutcome)])
                 }
@@ -193,7 +193,7 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
         val starts = positions.toTypedArray()
 
         // string does not contain sentence end positions
-        if (starts.size == 0) {
+        if (starts.isEmpty()) {
 
             // remove leading and trailing whitespace
             var start = 0
@@ -208,14 +208,14 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
             }
 
             if ((end - start) > 0) {
-                sentProbs.add(1.toDouble());
-                return Pair(arrayOf(Span(start, end)), sentProbs);
+                sentProbs.add(1.toDouble())
+                return Pair(arrayOf(Span(start, end)), sentProbs)
             } else
                 return Pair(arrayOf(), sentProbs)
         }
 
         // Now convert the sent indexes to spans
-        val leftover = starts[starts.size - 1].toInt() != s.length;
+        val leftover = starts[starts.size - 1] != s.length
         val arraySize = if (leftover) {
             starts.size + 1
         } else {
@@ -231,9 +231,9 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
                 while (si < starts.size && StringUtil.isWhitespace(s[start]))
                     start++
             } else {
-                start = starts[si - 1].toInt()
+                start = starts[si - 1]
             }
-            end = starts[si].toInt()
+            end = starts[si]
             while (end > 0 && StringUtil.isWhitespace(s[end - 1])) {
                 end--
             }
@@ -241,7 +241,7 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
         }
 
         if (leftover) {
-            spans[spans.size - 1] = Span(starts[starts.size - 1].toInt(), s.length)
+            spans[spans.size - 1] = Span(starts[starts.size - 1], s.length)
             sentProbs.add(ONE)
         }
 
@@ -264,7 +264,6 @@ class SentenceDetectorThreadsafeME : SentenceDetector {
     private fun isAcceptableBreak(s: String, fromIndex: Int, candidateIndex: Int): Boolean {
         return true
     }
-
 
 
 }
