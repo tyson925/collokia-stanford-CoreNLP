@@ -11,7 +11,6 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.MapType
 import scala.collection.JavaConversions
-import scala.collection.immutable.HashMap
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.stackoverflow.SoLitleModel.SOThreadExtractValues
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
@@ -23,17 +22,32 @@ import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
 import java.io.Serializable
 
 interface NLPToken : Serializable {
-    var index: Int
+    var index: String
     var token: String
     var lemma: String
-    var indexInContent: Int
+    var indexInContent: String
 }
 
-data class LemmaToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int) : Serializable,NLPToken
+data class LemmaToken(override var index: String,
+                      override var token: String,
+                      override var lemma: String,
+                      override var indexInContent: String) : Serializable,NLPToken
 
-data class PosToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int, var posTag: String) :Serializable, NLPToken
+data class PosToken(override var index: String,
+                    override var token: String,
+                    override var lemma: String,
+                    override var indexInContent: String,
+                    var posTag: String) :Serializable, NLPToken
 
-data class ParseToken(override var index: Int,override var token: String,override var lemma: String,override var indexInContent: Int, var posTag: String, var parseTag: String, var parseIndex: Int) :Serializable, NLPToken
+//data class PosToken(var index: Int, var token: String, var lemma: String, var indexInContent: Int, var posTag: String) :Serializable
+
+data class ParseToken(override var index: String,
+                      override var token: String,
+                      override var lemma: String,
+                      override var indexInContent: String,
+                      var posTag: String,
+                      var parseTag: String,
+                      var parseIndex: String) :Serializable, NLPToken
 
 data class NLPSentence(var Sentence: List<NLPToken>) : Serializable
 
@@ -57,36 +71,38 @@ fun nlpTokenType(): MapType {
 
 fun toNLPContentRDD(dataset: Dataset<Row>,parserType: PARSER_TYPE) : JavaRDD<NLPContent> {
     return dataset.toJavaRDD().map { row ->
-        val parsedSentences = row.getList<WrappedArray<HashMap<String, String>>>(3)
+        val parsedSentences = row.getList<WrappedArray<scala.collection.immutable.Map<String, String>>>(0)
         NLPContent(parsedSentences.map { sentence ->
             NLPSentence(JavaConversions.asJavaCollection(sentence).map { map ->
+
                 getToken(map,parserType)
             })
         })
     }
 }
 
-fun getToken(map: scala.collection.immutable.HashMap<String, String>, parserType: PARSER_TYPE): NLPToken {
+fun getToken(map: scala.collection.immutable.Map<String, String>, parserType: PARSER_TYPE): NLPToken {
 
     return if (parserType == PARSER_TYPE.LEMMATIZER) {
-        LemmaToken(index = map[NLPToken::index.name].get().toInt(),
+        LemmaToken(index = map[NLPToken::index.name].get(),
                 token = map[NLPToken::token.name].get(),
                 lemma = map[NLPToken::lemma.name].get(),
-                indexInContent = map[NLPToken::indexInContent.name].get().toInt())
+                indexInContent = map[NLPToken::indexInContent.name].get())
+
     } else if (parserType == PARSER_TYPE.POSTAGGER) {
-        PosToken(index = map[NLPToken::index.name].get().toInt(),
-                token = map[NLPToken::token.name].get(),
-                lemma = map[NLPToken::lemma.name].get(),
-                indexInContent = map[NLPToken::indexInContent.name].get().toInt(),
+        PosToken(index = map[PosToken::index.name].get(),
+                token = map[PosToken::token.name].get(),
+                lemma = map[PosToken::lemma.name].get(),
+                indexInContent = map[PosToken::indexInContent.name].get(),
                 posTag = map[PosToken::posTag.name].get())
     } else {
-        ParseToken(index = map[NLPToken::index.name].get().toInt(),
-                token = map[NLPToken::token.name].get(),
-                lemma = map[NLPToken::lemma.name].get(),
-                indexInContent = map[NLPToken::indexInContent.name].get().toInt(),
-                posTag = map[PosToken::posTag.name].get(),
+        ParseToken(index = map[ParseToken::index.name].get(),
+                token = map[ParseToken::token.name].get(),
+                lemma = map[ParseToken::lemma.name].get(),
+                indexInContent = map[ParseToken::indexInContent.name].get(),
+                posTag = map[ParseToken::posTag.name].get(),
                 parseTag = map[ParseToken::parseTag.name].get(),
-                parseIndex = map[ParseToken::parseIndex.name].get().toInt())
+                parseIndex = map[ParseToken::parseIndex.name].get())
     }
 }
 

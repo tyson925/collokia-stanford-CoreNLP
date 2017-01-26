@@ -12,11 +12,11 @@ class NGramInRawInput : PersistableUnaryTransformer<WrappedArray<String>, Array<
         return ConvertFunctionOnRawData()
     }
 
-    override fun outputDataType(): DataType? {
+    override fun outputDataType(): DataType {
         return DataTypes.createArrayType(DataTypes.StringType)
     }
 
-    override fun uid(): String? {
+    override fun uid(): String {
         //return UUID.randomUUID().toString()
         return "uid1111111"
     }

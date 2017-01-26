@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package uy.com.collokia.nlpTest.parser
 
 import org.apache.spark.sql.Dataset
@@ -32,6 +34,18 @@ class ParserTest() {
         }
     }
 
+    fun writeParsedContentToES() {
+        val jsc = getLocalSparkContext("Test NLP parser", cores = 1)
+        val sparkSession = getLocalSparkSession("Test NLP parser")
+
+
+        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+
+        parserTest(sparkSession, testCorpus)
+
+        closeSpark(jsc)
+    }
+
     fun parserTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
         val parser = MateParser(sparkSession)
@@ -41,18 +55,6 @@ class ParserTest() {
 
         val parsedDataset = parsedContentRDD.convertRDDToDF(sparkSession)
         JavaEsSparkSQL.saveToEs(parsedDataset, "$PARSED_INDEX_NAME/parsedContent")
-    }
-
-    fun writeParsedContentToES() {
-        val jsc = getLocalSparkContext("Test NLP parser", cores = 2)
-        val sparkSession = getLocalSparkSession("Test NLP parser")
-
-
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
-
-        parserTest(sparkSession, testCorpus)
-
-        closeSpark(jsc)
     }
 
     fun parseEducarCorpus() {

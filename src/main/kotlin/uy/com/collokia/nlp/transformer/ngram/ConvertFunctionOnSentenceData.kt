@@ -4,19 +4,22 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import scala.runtime.AbstractFunction1
 import uy.com.collokia.nlp.parser.DEFAULT_NGRAM_SEPARATOR
+import uy.com.collokia.nlp.parser.NLPToken
 import java.io.Serializable
 import java.util.*
 
 
-
 @Suppress("unused")
-class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<Array<Array<String>>>>(), Serializable {
+class ConvertFunctionOnSentenceData :
+        AbstractFunction1<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>, Array<Array<Map<String, String>>>>(), Serializable {
 
     companion object {
         const val NUMBER_OF_NGRAMS = 3
     }
 
-    override fun apply(content: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<Array<Array<String>>> {
+    override fun apply(content: WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>)
+            : Array<Array<Map<String, String>>> {
+
         val sentences = JavaConversions.seqAsJavaList(content)
         //println(sentences.javaClass.kotlin)
         return sentences.map { sentence ->
@@ -26,8 +29,13 @@ class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArra
 
     }
 
-    fun wordNGrams(sentence: WrappedArray<WrappedArray<String>>, N: Int, oneToN: Boolean, separator: String = DEFAULT_NGRAM_SEPARATOR): Array<Array<String>> {
-        val RET = LinkedList<Array<String>>()
+    fun wordNGrams(sentence: WrappedArray<scala.collection.immutable.Map<String, String>>,
+                   N: Int,
+                   oneToN: Boolean,
+                   separator: String = DEFAULT_NGRAM_SEPARATOR)
+            : Array<Map<String, String>> {
+
+        val RET = LinkedList<Map<String, String>>()
 
         for (i in (if (oneToN) 1 else N)..N + 1 - 1) {
             RET.addAll(wordNGramsLevel(JavaConversions.seqAsJavaList(sentence), i, separator))
@@ -44,21 +52,29 @@ class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArra
      * *
      * @return
      */
-    private fun wordNGramsLevel(tokensInfo: List<WrappedArray<String>>, N: Int, separator: String = DEFAULT_NGRAM_SEPARATOR): List<Array<String>> {
-        val RET: MutableList<Array<String>>
+    private fun wordNGramsLevel(tokensInfo: List<scala.collection.immutable.Map<String, String>>,
+                                N: Int,
+                                separator: String = DEFAULT_NGRAM_SEPARATOR)
+            : List<Map<String, String>> {
+
+        val RET: List<Map<String, String>>
 
         if (N < 2) {
-            RET = tokensInfo.map { token -> JavaConversions.seqAsJavaList(token).toTypedArray() }.toMutableList()
+            RET = listOf(tokensInfo.map { map ->
+                val item = map.iterator().next()
+                item._1 to item._2
+            }.toMap())
         } else {
-            RET = mutableListOf<Array<String>>()
+            RET = mutableListOf<Map<String, String>>()
             for (i in 0..tokensInfo.size - N + 1 - 1) {
                 val tokens = StringBuffer()
                 val lemmas = StringBuffer()
                 //val posTags = StringBuffer()
-
+                val firstTokenMap = tokensInfo[i]
                 for (j in 0..N - 1) {
-                    tokens.append(tokensInfo[i + j].apply(0))
-                    lemmas.append(tokensInfo[i + j].apply(1))
+                    val tokenMap = tokensInfo[i + j]
+                    tokens.append(tokenMap[NLPToken::token.name].get())
+                    lemmas.append(tokenMap[NLPToken::lemma.name].get())
                     //posTags.append(tokensInfo[i + j].apply(2))
                     if (j < (N - 1)) {
                         tokens.append(separator)
@@ -67,7 +83,11 @@ class ConvertFunctionOnSentenceData : AbstractFunction1<WrappedArray<WrappedArra
                     }
                 }
 
-                RET.add(arrayOf(tokens.toString(),lemmas.toString()))
+                RET.add(mapOf(NLPToken::token.name to tokens.toString(),
+                        NLPToken::lemma.name to lemmas.toString(),
+                        NLPToken::index.name to firstTokenMap[NLPToken::index.name].get(),
+                        NLPToken::indexInContent.name to firstTokenMap[NLPToken::indexInContent.name].get()
+                ))
             }
         }
 

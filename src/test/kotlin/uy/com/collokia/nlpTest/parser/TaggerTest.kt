@@ -36,14 +36,19 @@ class TaggerTest() {
         }
     }
 
-    fun taggerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
+    fun taggerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>, isStoreToEs : Boolean) {
 
         val tagger = MateTagger(sparkSession)
         val taggedContent = tagger.transform(testCorpus)
-        val taggedRDD = toNLPContentRDD(taggedContent, PARSER_TYPE.POSTAGGER)
 
-        val taggedDataset = taggedRDD.convertRDDToDF(sparkSession)
-        JavaEsSparkSQL.saveToEs(taggedDataset, "$TAGGED_INDEX_NAME/taggedContent")
+        taggedContent.show(10, false)
+
+        if (isStoreToEs) {
+            val taggedRDD = toNLPContentRDD(taggedContent, PARSER_TYPE.POSTAGGER)
+            val taggedDataset = taggedRDD.convertRDDToDF(sparkSession)
+            taggedDataset.show(10,false)
+            JavaEsSparkSQL.saveToEs(taggedDataset, "$TAGGED_INDEX_NAME/taggedContent")
+        }
     }
 
     fun writeTaggedContentToES() {
@@ -52,7 +57,7 @@ class TaggerTest() {
 
 
         val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
-        taggerTest(sparkSession, testCorpus)
+        taggerTest(sparkSession, testCorpus, isStoreToEs = true)
 
         closeSpark(jsc)
     }

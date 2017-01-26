@@ -32,22 +32,24 @@ class LemmatizerTest : Serializable {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {
                 val test = LemmatizerTest()
-                //test.readLemmatizedContentFromES()
-                test.writeLemmatizedContentToES()
+                test.readLemmatizedContentFromES()
+                //test.writeLemmatizedContentToES(isRaw = false)
             }
             println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
     }
 
-    fun writeLemmatizedContentToES() {
+    fun writeLemmatizedContentToES(isRaw: Boolean) {
         val jsc = getLocalSparkContext("Test NLP parser", cores = 4)
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
-
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = true)
-
-        //lemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
-        rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+        if (isRaw) {
+            val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = true)
+            rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+        } else {
+            val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+            lemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+        }
 
         closeSpark(jsc)
     }
@@ -59,7 +61,7 @@ class LemmatizerTest : Serializable {
 
         lemmatized.show(10, false)
 
-        val lemmatizedRDD = toNLPContentRDD(lemmatized,PARSER_TYPE.LEMMATIZER)
+        val lemmatizedRDD = toNLPContentRDD(lemmatized, PARSER_TYPE.LEMMATIZER)
 
         if (isStoreToEs) {
             val lemmatizedDataset = lemmatizedRDD.convertRDDToDF(sparkSession)
@@ -93,7 +95,7 @@ class LemmatizerTest : Serializable {
                 .set("num-executors", "3")
                 .set("executor-cores", "4")
                 .set("executor-memory", "4G")
-                .set("es.read.field.as.array.include", "lemmatizedContent, lemmatizedContent.lemmatizedSentence")
+                .set("es.read.field.as.array.include", "content, content.sentence")
 
         val jsc = JavaSparkContext(sparkConf)
 
@@ -103,5 +105,6 @@ class LemmatizerTest : Serializable {
         val documents = readSoContentFromEs(sparkSession, LEMMATIZED_INDEX_NAME)
         documents.show(10, false)
 
+        toNLPContentRDD(documents,PARSER_TYPE.LEMMATIZER).convertRDDToDF(sparkSession).show(10,false)
     }
 }
