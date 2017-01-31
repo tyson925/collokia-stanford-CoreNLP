@@ -44,7 +44,6 @@ class MateLemmatizer : Transformer, Serializable {
     val sparkSession: SparkSession
     var language: LANGUAGE
     val udfName = "lemmatizer"
-
     constructor(sparkSession: SparkSession,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = tokenizedContent,

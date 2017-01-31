@@ -32,23 +32,23 @@ class LemmatizerTest : Serializable {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {
                 val test = LemmatizerTest()
-                test.readLemmatizedContentFromES()
-                //test.writeLemmatizedContentToES(isRaw = false)
+                //test.readLemmatizedContentFromES()
+                test.writeLemmatizedContentToES(isRaw = false, isStoreToEs = false)
             }
             println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
         }
     }
 
-    fun writeLemmatizedContentToES(isRaw: Boolean) {
+    fun writeLemmatizedContentToES(isRaw: Boolean, isStoreToEs: Boolean) {
         val jsc = getLocalSparkContext("Test NLP parser", cores = 4)
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
         if (isRaw) {
             val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = true)
-            rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+            rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = isStoreToEs)
         } else {
             val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
-            lemmatizerTest(sparkSession, testCorpus, isStoreToEs = true)
+            lemmatizerTest(sparkSession, testCorpus, isStoreToEs = isStoreToEs)
         }
 
         closeSpark(jsc)
@@ -105,6 +105,6 @@ class LemmatizerTest : Serializable {
         val documents = readSoContentFromEs(sparkSession, LEMMATIZED_INDEX_NAME)
         documents.show(10, false)
 
-        toNLPContentRDD(documents,PARSER_TYPE.LEMMATIZER).convertRDDToDF(sparkSession).show(10,false)
+        toNLPContentRDD(documents, PARSER_TYPE.LEMMATIZER).convertRDDToDF(sparkSession).show(10, false)
     }
 }

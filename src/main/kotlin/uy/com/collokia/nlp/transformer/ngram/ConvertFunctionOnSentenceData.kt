@@ -60,10 +60,9 @@ class ConvertFunctionOnSentenceData :
         val RET: List<Map<String, String>>
 
         if (N < 2) {
-            RET = listOf(tokensInfo.map { map ->
-                val item = map.iterator().next()
-                item._1 to item._2
-            }.toMap())
+            RET = tokensInfo.map { map ->
+                constructToken(map)
+            }
         } else {
             RET = mutableListOf<Map<String, String>>()
             for (i in 0..tokensInfo.size - N + 1 - 1) {
@@ -92,5 +91,13 @@ class ConvertFunctionOnSentenceData :
         }
 
         return RET
+    }
+
+    private fun constructToken(map: scala.collection.immutable.Map<String, String>): Map<String, String> {
+        return mapOf(NLPToken::token.name to map[NLPToken::token.name].get(),
+                NLPToken::lemma.name to map[NLPToken::lemma.name].get(),
+                NLPToken::index.name to map[NLPToken::index.name].get(),
+                NLPToken::indexInContent.name to map[NLPToken::indexInContent.name].get()
+        )
     }
 }
