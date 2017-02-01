@@ -7,6 +7,8 @@ import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
+const val NGRAM_CONTENT_COL = "ngram_content"
+
 class NGramOnSentenceData :
         PersistableUnaryTransformer<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>,
                 Array<Array<Map<String, String>>>, NGramOnSentenceData>() {
