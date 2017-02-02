@@ -17,7 +17,11 @@ import scala.Tuple2
 import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
 import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
+import uy.com.collokia.common.utils.nospark.NoSparkTransformer
 import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
+import uy.com.collokia.nlp.transformer.ngram.NoSparkNGramInRawInput
+import uy.com.collokia.nlp.transformer.nospark.NoSparkRegexTokenizer
+import uy.com.collokia.nlp.transformer.nospark.NoSparkStopWordsRemover
 
 
 @Suppress("UNUSED_VARIABLE")
@@ -55,16 +59,20 @@ fun constructNgramsPipeline(stages: Array<PipelineStage>): Pipeline {
     return pipeline
 }
 
+
 fun constructNgrams(stopwords: Set<String> = setOf(),
                     inputColName: String = "content",
                     toLowercase: Boolean = false,
-                    minTokenLength: Int = 2): Array<PipelineStage> {
+                    minTokenLength: Int = 2): Array<NoSparkTransformer> {
 
-    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
-            .setMinTokenLength(minTokenLength)
-            .setToLowercase(toLowercase)
-            .setPattern("\\w+")
-            .setGaps(false)
+    val tokenizer = NoSparkRegexTokenizer(
+            RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
+                    .setMinTokenLength(minTokenLength)
+                    .setToLowercase(toLowercase)
+                    .setPattern("\\w+")
+                    .setGaps(false)
+    )
+
 
     val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
@@ -74,11 +82,15 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
         stopwords.toTypedArray()
     }
 
-    val remover = StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(inputColName + "_" + removeOutputCol)
-            .setStopWords(stopwordsApplied)
-            .setCaseSensitive(false)
+    val remover = NoSparkStopWordsRemover(
+            StopWordsRemover().setInputCol(tokenizer.regexTokenizer.outputCol).setOutputCol(inputColName + "_" + removeOutputCol)
+                    .setStopWords(stopwordsApplied)
+                    .setCaseSensitive(false)
+    )
 
-    val ngram = NGramInRawInput().setInputCol(remover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
+    val ngram = NoSparkNGramInRawInput(
+            NGramInRawInput().setInputCol(remover.stopWordsRemover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
+    )
 
     return arrayOf(tokenizer, remover, ngram)
 }
@@ -97,7 +109,7 @@ fun constructVTM(vocabSize: Int = CONTENT_VTM_VOC_SIZE, vtmInputCol: String): Ar
             .setOutputCol(prefix + "_" + cvModelOutputCol)
 
     //it is useless
-    //val idf = IDF().setInputCol(cvModel.outputCol).setOutputCol("idfFeatures").setMinDocFreq(3)
+    //val idf = IDF().setInputCol(cvModel._outputCol).setOutputCol("idfFeatures").setMinDocFreq(3)
 
     val normalizer = Normalizer().setInputCol(cvModel.outputCol).setOutputCol(prefix + "_" + normalizerOutputCol).setP(1.0)
 
@@ -157,26 +169,26 @@ fun constructVTMPipeline(stopwords: Array<String>,
             .setPattern("\\w+")
             .setGaps(false)
 
-    val titleRemover = StopWordsRemover().setInputCol(titleTokenizer.outputCol)
+    val titleRemover = StopWordsRemover().setInputCol(titleTokenizer._outputCol)
             .setStopWords(stopwordsApplied)
             .setCaseSensitive(false)
             .setOutputCol(titleRemoverOutputCol)
 
-    val ngram = OwnNGram().setInputCol(titleRemover.outputCol).setOutputCol(titleNgramsOutputCol)
+    val ngram = OwnNGram().setInputCol(titleRemover._outputCol).setOutputCol(titleNgramsOutputCol)
 
-    //val concatWs = ConcatWSTransformer().setInputCols(arrayOf(titleRemover.outputCol, ngram.outputCol)).setOutputCol("title_bigrams")
+    //val concatWs = ConcatWSTransformer().setInputCols(arrayOf(titleRemover._outputCol, ngram._outputCol)).setOutputCol("title_bigrams")
 
-    val titleCVModel = CountVectorizer().setInputCol(ngram.outputCol)
+    val titleCVModel = CountVectorizer().setInputCol(ngram._outputCol)
             .setOutputCol(titleCvModelOutputCol)
             .setVocabSize(vocabSize)
             .setMinDF(2.0)
 
-    val titleNormalizer = Normalizer().setInputCol(titleCVModel.outputCol)
+    val titleNormalizer = Normalizer().setInputCol(titleCVModel._outputCol)
             .setOutputCol(titleOutputCol)
             .setP(1.0)
 
     val scaler = StandardScaler()
-            .setInputCol(titleCVModel.outputCol)
+            .setInputCol(titleCVModel._outputCol)
             .setOutputCol(titleOutputCol)
             .setWithStd(true)
             .setWithMean(false)
