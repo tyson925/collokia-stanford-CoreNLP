@@ -30,5 +30,15 @@ class VectorUnaryTransformer() : UnaryTransformer<WrappedArray<Double>, Vector, 
             return Vectors.dense(content?.toVector()?.toArray(`ClassTag$`.`MODULE$`.Double()) as DoubleArray)
         }
     }
+
+    override fun setInputCol(value: String?): VectorUnaryTransformer {
+        this.inputCol = value
+        return this
+    }
+
+    override fun setOutputCol(value: String?): VectorUnaryTransformer {
+        this.outputCol = value
+        return this
+    }
 }
 

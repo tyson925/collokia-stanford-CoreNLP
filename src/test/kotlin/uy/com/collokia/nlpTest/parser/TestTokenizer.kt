@@ -1,6 +1,5 @@
 package uy.com.collokia.nlpTest.parser
 
-import uy.com.collokia.common.utils.formatterToTimePrint
 import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
@@ -29,7 +28,7 @@ class TestTokenizer() : Serializable {
 
                 tokenized.show(false)
             }
-            println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
+            println("Execution time is ${time.second}")
         }
     }
 

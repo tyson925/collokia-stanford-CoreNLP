@@ -8,7 +8,6 @@ import org.apache.spark.sql.SparkSession
 import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
 import uy.com.collokia.common.utils.deleteFileIfExist
-import uy.com.collokia.common.utils.formatterToTimePrint
 import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.*
 import uy.com.collokia.nlp.parser.LANGUAGE
@@ -30,7 +29,7 @@ class ParserTest() {
                 test.writeParsedContentToES()
                 //test.parseEducarCorpus()
             }
-            println("Execution time is ${formatterToTimePrint.format(time.second / 1000.toLong())} seconds.")
+            println("Execution time is ${time.second} seconds.")
         }
     }
 
