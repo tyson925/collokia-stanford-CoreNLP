@@ -12,6 +12,7 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.MapType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
 import uy.com.collokia.common.data.dataClasses.stackoverflow.SoLitleModel.SOThreadExtractValues
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizerRaw
@@ -135,6 +136,24 @@ fun lemmatizeContent(sparkSession: SparkSession,
     val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
     return analyzedData
 }
+
+fun v2lemmatizeContent(sparkSession: SparkSession,
+                     dataset: Dataset<SimpleDocument>,
+                     language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<Row> {
+
+    val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = isOutputRaw, language = language).setInputColName(inputColName)
+    val lemmatizer = if (isOutputRaw) {
+        MateLemmatizerRaw(sparkSession, isRawOutput = isOutputRaw)
+    } else {
+        MateLemmatizer(sparkSession, language = language).setInputColName(tokenizer.outputColName)
+    }
+    val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
+
+    val analyzer = textAnalyzer.fit(dataset)
+    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
+    return analyzedData
+}
+
 
 fun ngramLemmatizeContent(sparkSession: SparkSession,
                           dataset: Dataset<Row>,

@@ -59,11 +59,43 @@ fun constructNgramsPipeline(stages: Array<PipelineStage>): Pipeline {
     return pipeline
 }
 
-
 fun constructNgrams(stopwords: Set<String> = setOf(),
                     inputColName: String = "content",
                     toLowercase: Boolean = false,
-                    minTokenLength: Int = 2): Array<NoSparkTransformer> {
+                    minTokenLength: Int = 2): Array<PipelineStage> {
+
+    val tokenizer = RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
+            .setMinTokenLength(minTokenLength)
+            .setToLowercase(toLowercase)
+            .setPattern("\\w+")
+            .setGaps(false)
+
+
+    val stopwordsApplied = if (stopwords.isEmpty()) {
+        println("Load default english stopwords...")
+        StopWordsRemover.loadDefaultStopWords("english")
+    } else {
+        println("Load stopwords...")
+        stopwords.toTypedArray()
+    }
+
+    val remover =
+            StopWordsRemover().setInputCol(tokenizer.outputCol).setOutputCol(inputColName + "_" + removeOutputCol)
+                    .setStopWords(stopwordsApplied)
+                    .setCaseSensitive(false)
+
+
+    val ngram =
+            NGramInRawInput().setInputCol(remover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
+
+
+    return arrayOf(tokenizer, remover, ngram)
+}
+
+fun v2constructNgrams(stopwords: Set<String> = setOf(),
+                      inputColName: String = "content",
+                      toLowercase: Boolean = false,
+                      minTokenLength: Int = 2): Array<NoSparkTransformer> {
 
     val tokenizer = NoSparkRegexTokenizer(
             RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
