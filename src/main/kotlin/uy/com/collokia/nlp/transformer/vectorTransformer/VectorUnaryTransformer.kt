@@ -31,7 +31,7 @@ class VectorUnaryTransformer() : UnaryTransformer<WrappedArray<Double>, Vector, 
         }
     }
 
-    override fun setInputCol(value: String?): VectorUnaryTransformer {
+    /*override fun setInputCol(value: String?): VectorUnaryTransformer {
         this.inputCol = value
         return this
     }
@@ -39,6 +39,6 @@ class VectorUnaryTransformer() : UnaryTransformer<WrappedArray<Double>, Vector, 
     override fun setOutputCol(value: String?): VectorUnaryTransformer {
         this.outputCol = value
         return this
-    }
+    }*/
 }
 

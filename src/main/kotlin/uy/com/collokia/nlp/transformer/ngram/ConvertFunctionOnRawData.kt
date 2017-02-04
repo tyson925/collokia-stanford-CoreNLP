@@ -8,18 +8,26 @@ import java.io.Serializable
 import java.util.*
 
 
-class ConvertFunctionOnRawData : AbstractFunction1<WrappedArray<String>, Array<String>>(), Serializable {
+class ConvertFunctionOnRawData : AbstractFunction1<WrappedArray<String>, Array<String>>, Serializable {
+
+
+    val NGRAM_SEPARATOR : String
+
+    constructor(ngram_separator : String = DEFAULT_NGRAM_SEPARATOR){
+        this.NGRAM_SEPARATOR = ngram_separator
+    }
 
     companion object {
+
         const val NUMBER_OF_NGRAMS = 3
     }
 
     override fun apply(content: WrappedArray<String>?): Array<String> {
 
-        return wordNGrams(JavaConversions.seqAsJavaList(content) ?: listOf(), NUMBER_OF_NGRAMS, true, " ").toTypedArray()
+        return wordNGrams(JavaConversions.seqAsJavaList(content) ?: listOf(), NUMBER_OF_NGRAMS, true, NGRAM_SEPARATOR).toTypedArray()
     }
 
-    fun wordNGrams(tokens: List<String>, N: Int, oneToN: Boolean, separator: String = DEFAULT_NGRAM_SEPARATOR): List<String> {
+    fun wordNGrams(tokens: List<String>, N: Int, oneToN: Boolean, separator: String): List<String> {
         val RET = LinkedList<String>()
 
         for (i in (if (oneToN) 1 else N)..N + 1 - 1) {
@@ -37,7 +45,7 @@ class ConvertFunctionOnRawData : AbstractFunction1<WrappedArray<String>, Array<S
      * *
      * @return
      */
-    private fun wordNGramsLevel(tokens: List<String>, N: Int, separator: String = DEFAULT_NGRAM_SEPARATOR): List<String> {
+    private fun wordNGramsLevel(tokens: List<String>, N: Int, separator: String): List<String> {
         val RET: MutableList<String>
 
         if (N < 2) {

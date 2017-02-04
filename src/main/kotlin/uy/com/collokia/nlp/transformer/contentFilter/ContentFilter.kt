@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package uy.com.collokia.nlp.contentFilter
+package uy.com.collokia.nlp.transformer.contentFilter
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -8,10 +8,12 @@ import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.api.java.UDF1
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
+import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
 
 
@@ -35,7 +37,7 @@ class ContentFilter : Transformer {
         this.inputColName = inputColName
         this.outputColName = outputColName
 
-        val contentFilter = org.apache.spark.sql.api.java.UDF1({ tokens: scala.collection.mutable.WrappedArray<String> ->
+        val contentFilter = UDF1({ tokens: WrappedArray<String> ->
 
             this.potentialTags.intersect(JavaConversions.asJavaCollection(tokens))
 
@@ -63,9 +65,11 @@ class ContentFilter : Transformer {
         return ContentFilter(this.potentialTags, this.sparkSession, this.inputColName, this.outputColName)
     }
 
-    override fun transform(dataset: Dataset<*>?): Dataset<Row>? {
-        return dataset?.select(dataset.col("*"),
-                functions.callUDF("contentFilter", JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+    override fun transform(dataset: Dataset<*>?): Dataset<Row> {
+        return dataset?.let {
+            dataset.select(dataset.col("*"),
+                    functions.callUDF("contentFilter", JavaConversions.asScalaBuffer(listOf(dataset.col(inputColName)))).`as`(outputColName))
+        } ?: sparkSession.emptyDataFrame()
     }
 
     override fun transformSchema(schema: StructType?): StructType {

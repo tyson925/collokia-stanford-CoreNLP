@@ -118,6 +118,11 @@ class OpenNlpTokenizer : Transformer, Serializable {
         return this
     }
 
+    fun setOutputColName(outputColName : String) : OpenNlpTokenizer {
+        this.outputColName = outputColName
+        return this
+    }
+
     override fun uid(): String {
         return "uid1111111"
     }
