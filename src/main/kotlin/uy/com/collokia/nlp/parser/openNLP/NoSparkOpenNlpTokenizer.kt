@@ -8,15 +8,18 @@ import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer
 import uy.com.collokia.nlp.parser.LANGUAGE
 import java.io.Serializable
 
 
 class NoSparkOpenNlpTokenizer(var sparkSession: SparkSession,
-                              var inputColName: String = "content",
+                              var inputColName: String = SimpleDocument::content.name,
                               val language: LANGUAGE = LANGUAGE.ENGLISH,
                               val isOutputRaw: Boolean = true,
+                              val outputColName:String = SimpleDocumentAnalyzed::analyzedContent.name,
                               sentenceDetectorModelName: String = englishSentenceDetectorModelName,
                               tokenizerModelName: String = englishTokenizerModelName
 ) : NoSparkTransformer(), Serializable {
@@ -74,7 +77,6 @@ class NoSparkOpenNlpTokenizer(var sparkSession: SparkSession,
     var sdetectorWrapper: OpenNlpSentenceDetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName)
     else if (language == LANGUAGE.SPANISH) OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
     else OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
-    var outputColName = tokenizedContent
     val udfName = "tokenizer"
     var isRaw = isOutputRaw
 
