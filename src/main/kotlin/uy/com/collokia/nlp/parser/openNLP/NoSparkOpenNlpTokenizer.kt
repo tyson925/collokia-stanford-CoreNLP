@@ -19,7 +19,7 @@ class NoSparkOpenNlpTokenizer(var sparkSession: SparkSession,
                               var inputColName: String = SimpleDocument::content.name,
                               val language: LANGUAGE = LANGUAGE.ENGLISH,
                               val isOutputRaw: Boolean = true,
-                              val outputColName:String = SimpleDocumentAnalyzed::analyzedContent.name,
+                              val outputColName:String = "tokenizedContent",
                               sentenceDetectorModelName: String = englishSentenceDetectorModelName,
                               tokenizerModelName: String = englishTokenizerModelName
 ) : NoSparkTransformer(), Serializable {

@@ -28,15 +28,15 @@ class NoSparkVectorUnaryTransformer(val vectorUnaryTransformer:VectorUnaryTransf
     override fun transformSchema(schema: StructType): StructType {
         //add the output field to the schema
         val inputType = schema.apply(vectorUnaryTransformer.inputCol).dataType()
-        if (!inputType.sameType(DataTypes.createArrayType(DataTypes.StringType))){
-            throw  IllegalArgumentException("Input column ${vectorUnaryTransformer.inputCol} should be of type Array<String>.")
+        if (!inputType.sameType(DataTypes.createArrayType(DataTypes.DoubleType))){
+            throw  IllegalArgumentException("Input column ${vectorUnaryTransformer.inputCol} should be of type Array<Double>.")
         }
 
-        if (schema.fieldNames().contains(vectorUnaryTransformer.inputCol)) {
+        if (schema.fieldNames().contains(vectorUnaryTransformer.outputCol)) {
             throw  IllegalArgumentException("Output column ${vectorUnaryTransformer.outputCol} already exists.")
         }
         val outputFields = schema.fields() +
-                StructField(vectorUnaryTransformer.outputCol, DataTypes.createArrayType(DataTypes.StringType), false, Metadata.empty())
+                StructField(vectorUnaryTransformer.outputCol, VectorUDT(), false, Metadata.empty())
         return StructType(outputFields)
     }
 

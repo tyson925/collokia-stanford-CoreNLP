@@ -19,7 +19,7 @@ class NoSparkNGramInRawInput(val nGramRawInput: NGramInRawInput) : NoSparkTransf
             throw  IllegalArgumentException("Input column ${nGramRawInput.inputCol} should be of type Array<String>.")
         }
 
-        if (schema.fieldNames().contains(nGramRawInput.inputCol)) {
+        if (schema.fieldNames().contains(nGramRawInput.outputCol)) {
             throw  IllegalArgumentException("Output column ${nGramRawInput.outputCol} already exists.")
         }
         val outputFields = schema.fields() +

@@ -20,7 +20,7 @@ class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTran
             throw  IllegalArgumentException("Input column ${stopWordsRemover.inputCol} should be of type Array<String>.")
         }
 
-        if (schema.fieldNames().contains(stopWordsRemover.inputCol)) {
+        if (schema.fieldNames().contains(stopWordsRemover.outputCol)) {
             throw  IllegalArgumentException("Output column ${stopWordsRemover.outputCol} already exists.")
         }
         val outputFields = schema.fields() +
@@ -36,7 +36,7 @@ class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTran
     class ExposedStopWordsRemover(_stopWordsRemover: StopWordsRemover) : StopWordsRemover() {
         init {
             _stopWordsRemover.params().forEach { p ->
-                this.set(p.name(), _stopWordsRemover.get(p))
+                this.set(p.name(), _stopWordsRemover.get(p).get())
             }
         }
 

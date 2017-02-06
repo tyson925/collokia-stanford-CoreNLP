@@ -121,7 +121,7 @@ fun v2constructNgrams(stopwords: Set<String> = setOf(),
     )
 
     val ngram = NoSparkNGramInRawInput(
-            NGramInRawInput().setInputCol(remover.stopWordsRemover.outputCol).setOutputCol(inputColName + "_" + ngramOutputCol)
+            NGramInRawInput().setInputCol(remover.stopWordsRemover.getOutputCol()).setOutputCol(inputColName + "_" + ngramOutputCol)
     )
 
     return arrayOf(tokenizer, remover, ngram)

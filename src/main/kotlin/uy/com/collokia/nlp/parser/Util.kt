@@ -147,12 +147,12 @@ fun _v2lemmatizeContent(sparkSession: SparkSession,
                         language: LANGUAGE = LANGUAGE.ENGLISH, rawOutput: Boolean = false): Dataset<Row> {
 
     val tokenizer = NoSparkOpenNlpTokenizer(sparkSession, isOutputRaw = rawOutput, language = language)
-    val lemmatizer = NoSparkMateLemmatizer(sparkSession, language = language).setInputColName(tokenizer.outputColName)
+    val lemmatizer = NoSparkMateLemmatizer(sparkSession, language = language).setInputColName(tokenizer.outputColName).setOutputColName(SimpleDocumentAnalyzed::analyzedContent.name)
 
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
     val analyzer = textAnalyzer.fit(dataset.toDF())
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, SimpleDocument::content.name)
+    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName)
     return analyzedData
 }
 

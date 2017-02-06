@@ -15,7 +15,7 @@ class NoSparkRegexTokenizer(val regexTokenizer:RegexTokenizer): NoSparkTransform
     override fun transformSchema(schema: StructType): StructType  {
         //add the output field to the schema
         //val inputType = schema.apply(_inputCol).dataType()
-        if (schema.fieldNames().contains(regexTokenizer.inputCol)) {
+        if (schema.fieldNames().contains(regexTokenizer.outputCol)) {
             throw  IllegalArgumentException("Output column ${regexTokenizer.outputCol} already exists.")
         }
         val outputFields = schema.fields() +
