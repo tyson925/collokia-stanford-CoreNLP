@@ -28,11 +28,11 @@ class NoSparkOpenNlpTokenizer(var sparkSession: SparkSession,
         val content = mapIn[inputColName] as String
         return mapIn + (
                 outputColName to
-                        if (isOutputRaw) {
+                        (if (isOutputRaw) {
                             transformSingleRaw(content)
                         } else {
-                            transformSingle(content)
-                        }
+                            transformSingle(content).map{ it.toTypedArray()}
+                        }).toTypedArray()
                 )
     }
 
@@ -108,7 +108,11 @@ class NoSparkOpenNlpTokenizer(var sparkSession: SparkSession,
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")
         }
-        return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
+        if (isRaw) {
+            return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.StringType), inputType?.nullable() ?: false)
+        }else{
+            return SchemaUtils.appendColumn(schema, outputColName, DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType)), inputType?.nullable() ?: false)
+        }
     }
 
 }

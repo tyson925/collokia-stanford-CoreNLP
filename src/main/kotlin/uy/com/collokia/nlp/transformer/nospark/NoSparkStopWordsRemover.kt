@@ -9,6 +9,7 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import scala.Function1
 import scala.collection.Seq
+import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer
 
 class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTransformer() {
@@ -43,12 +44,15 @@ class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTran
         val stopWordsSet by lazy { stopWords.toSet() }
         val lowerStopWordsSet by lazy { stopWords.map { it?.toLowerCase() }.toSet() }
 
-        fun transform(dataIn: Collection<String>): Collection<String> = if (caseSensitive) {
-            dataIn.filter { !stopWordsSet.contains(it) }
-        } else {
-            // TODO: support user locale (SPARK-15064)
-            dataIn.filter { !lowerStopWordsSet.contains(it.toLowerCase()) }
+        fun transform(dataIn: WrappedArray<String>): List<String> {
+            return if (caseSensitive) {
+                (dataIn.array() as Array<String>).filter { t: String -> !stopWordsSet.contains(t) }
+            } else {
+                // TODO: support user locale (SPARK-15064)
+                (dataIn.array() as Array<String>).filter { t: String -> !lowerStopWordsSet.contains(t.toLowerCase()) }
+            }
         }
+
 
 
     }
@@ -57,6 +61,6 @@ class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTran
 
 
     override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
-        return mapIn + (stopWordsRemover.outputCol to stopWordsRemover.transform(mapIn[stopWordsRemover.inputCol] as Collection<String>))
+        return mapIn + (stopWordsRemover.outputCol to stopWordsRemover.transform(mapIn[stopWordsRemover.inputCol] as WrappedArray<String>).toTypedArray())
     }
 }

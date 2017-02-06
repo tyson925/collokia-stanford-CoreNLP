@@ -32,7 +32,7 @@ class NoSparkNGramInRawInput(val nGramRawInput: NGramInRawInput) : NoSparkTransf
 
 
     override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
-        return mapIn +  (nGramRawInput.outputCol to transformFunc.apply(mapIn[nGramRawInput.inputCol] as WrappedArray<String>))
+        return mapIn +  (nGramRawInput.outputCol to WrappedArray.make<String>(transformFunc.apply(mapIn[nGramRawInput.inputCol] as WrappedArray<String>)))
     }
 
     override fun copy(extra: ParamMap?): Transformer = defaultCopy<NoSparkNGramInRawInput>(extra)

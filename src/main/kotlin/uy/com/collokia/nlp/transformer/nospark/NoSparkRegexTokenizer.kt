@@ -7,19 +7,21 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import scala.Function1
+import scala.collection.JavaConversions
 import scala.collection.Seq
+import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer
 
-class NoSparkRegexTokenizer(val regexTokenizer:RegexTokenizer): NoSparkTransformer() {
+class NoSparkRegexTokenizer(val regexTokenizer: RegexTokenizer) : NoSparkTransformer() {
 
-    override fun transformSchema(schema: StructType): StructType  {
+    override fun transformSchema(schema: StructType): StructType {
         //add the output field to the schema
         //val inputType = schema.apply(_inputCol).dataType()
         if (schema.fieldNames().contains(regexTokenizer.outputCol)) {
             throw  IllegalArgumentException("Output column ${regexTokenizer.outputCol} already exists.")
         }
         val outputFields = schema.fields() +
-                StructField(regexTokenizer.outputCol, DataTypes.createArrayType(DataTypes.StringType),  false,  org.apache.spark.sql.types.Metadata.empty())
+                StructField(regexTokenizer.outputCol, DataTypes.createArrayType(DataTypes.StringType), false, org.apache.spark.sql.types.Metadata.empty())
         return StructType(outputFields)
     }
 
@@ -32,7 +34,11 @@ class NoSparkRegexTokenizer(val regexTokenizer:RegexTokenizer): NoSparkTransform
     private val transformFunc = regexTokenizer.createTransformFunc()
 
     override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
-        return mapIn +  (regexTokenizer.outputCol to transformFunc.apply(mapIn[regexTokenizer.inputCol].toString()))
+        return mapIn + (regexTokenizer.outputCol to
+                WrappedArray.make<String>(JavaConversions.seqAsJavaList(
+                        transformFunc.apply(mapIn[regexTokenizer.inputCol].toString())
+                ).toTypedArray()
+                ))
     }
 
 }
