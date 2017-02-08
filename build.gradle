@@ -1,5 +1,5 @@
 group 'com.collokia'
-version '1.0.5.2'
+version '1.0.5.4'
 description 'collokia spark natural language processing stuffs'
 
 buildscript {
@@ -78,10 +78,15 @@ dependencies {
 
     configurations.all {
         resolutionStrategy {
-            force 'xml-apis:xml-apis:1.4.01'
+            //force 'xml-apis:xml-apis:1.4.01'
+            eachDependency { DependencyResolveDetails details ->
+                //specifying a fixed version for all libraries with 'org.gradle' group
+                if (details.requested.group == 'io.netty' && details.requested.version == '4.1.6.Final' && details.requested.name != 'netty-resolver') {
+                    details.useVersion "4.0.42.Final"
+                }
+            }
         }
     }
-
 
 }
 
