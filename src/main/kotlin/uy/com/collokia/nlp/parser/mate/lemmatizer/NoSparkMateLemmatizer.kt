@@ -10,6 +10,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
+import scala.collection.JavaConverters
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer
 import uy.com.collokia.nlp.parser.LANGUAGE
@@ -28,7 +29,7 @@ class NoSparkMateLemmatizer(val sparkSession: SparkSession, var language: LANGUA
     override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
         val sentences = mapIn[inputColName] as WrappedArray<WrappedArray<String>>
         val lemmatizer = lemmatizerWrapper.get()
-        val results = ArrayList<Array<Map<String, String>>>(sentences.size())
+        val results = ArrayList<Array<scala.collection.mutable.Map<String, String>>>(sentences.size())
 
         (0..sentences.size() - 1).forEach { sentenceNum ->
 
@@ -49,18 +50,18 @@ class NoSparkMateLemmatizer(val sparkSession: SparkSession, var language: LANGUA
 
             val lemmatizedTokens = sentenceArray.mapIndexed { tokenIndex, token ->
 
-                val values = mapOf(
+                val values = JavaConverters.mapAsScalaMapConverter(mapOf(
                         NLPToken::index.name to tokenIndex.toString(),
                         NLPToken::token.name to (token ?: ""),
                         NLPToken::lemma.name to lemmas[tokenIndex],
                         NLPToken::indexInContent.name to (contentIndex + tokenIndex).toString()
-                )
+                )).asScala()
                 values
             }.toTypedArray()
 
             results.add(sentenceNum, lemmatizedTokens)
         }
-        return mapIn + (outputColName to results)
+        return mapIn + (outputColName to results.toTypedArray())
 
     }
 
@@ -94,7 +95,15 @@ class NoSparkMateLemmatizer(val sparkSession: SparkSession, var language: LANGUA
     }
 
     private fun outputType(nullable: Boolean): StructField {
-        return DataTypes.createStructField(outputColName, nlpTokenType(), nullable)
+        return DataTypes.createStructField(
+                outputColName,
+                DataTypes.createArrayType(
+                        DataTypes.createArrayType(
+                                nlpTokenType()
+                        )
+                )
+                , nullable
+        )
     }
 
     init {
