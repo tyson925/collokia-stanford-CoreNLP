@@ -14,7 +14,7 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.parser.LANGUAGE
-import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.io.Serializable
 
 
@@ -31,13 +31,13 @@ class MateLemmatizerRaw : Transformer, Serializable {
     constructor(sparkSession: SparkSession,
                 isRawOutput: Boolean,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
-                inputColName: String = tokenizedContent,
-                outputColName: String = lemmatizedContentCol) {
+                inputColName: String = TOKENIZED_CONTENT_COL_NAME,
+                outputColName: String = LEMMATIZED_CONTENT_COL_NAME) {
 
         this.sparkSession = sparkSession
         this.isRawOutput = isRawOutput
         this.language = language
-        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
+        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) ENGLISH_LEMMATIZER_MODEL_NAME else SPANISH_LEMMATIZER_MODEL_NAME
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 

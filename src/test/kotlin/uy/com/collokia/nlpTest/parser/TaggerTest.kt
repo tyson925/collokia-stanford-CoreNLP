@@ -17,8 +17,8 @@ import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.PARSER_TYPE
 import uy.com.collokia.nlp.parser.mate.tagger.*
 import uy.com.collokia.nlp.parser.toNLPContentRDD
+import uy.com.collokia.nlp.transformer.candidateNGram.CANDIDATE_NGRAM_OUTPUT_COL_NAME
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
-import uy.com.collokia.nlp.transformer.candidateNGram.candidateNgramOutputColName
 import uy.com.collokia.nlpTest.util.TAGGED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 
@@ -107,8 +107,8 @@ class TaggerTest() {
 
     fun candidateExtractorTest(dataset: Dataset<Row>) {
         val candidateExtractor = CandidateNGram(LANGUAGE.ENGLISH)
-        candidateExtractor.inputCol = taggerOutputColName
-        candidateExtractor.outputCol = candidateNgramOutputColName
+        candidateExtractor.inputCol = TAGGER_OUTPUT_COL_NAME
+        candidateExtractor.outputCol = CANDIDATE_NGRAM_OUTPUT_COL_NAME
 
         val candidates = candidateExtractor.transform(dataset)
         candidates.show(10, false)

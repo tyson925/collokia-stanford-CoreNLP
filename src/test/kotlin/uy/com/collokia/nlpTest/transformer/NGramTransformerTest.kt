@@ -5,7 +5,7 @@ import org.apache.spark.sql.Row
 import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
-import uy.com.collokia.nlp.parser.mate.lemmatizer.lemmatizedContentCol
+import uy.com.collokia.nlp.parser.mate.lemmatizer.LEMMATIZED_CONTENT_COL_NAME
 import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
 import uy.com.collokia.nlpTest.util.constructLemmatizedTestDataset
 import java.io.Serializable
@@ -29,7 +29,7 @@ class NGramTransformerTest() : Serializable {
     }
 
     fun nGramTest(dataset: Dataset<Row>) {
-        val ngram = NGramOnSentenceData().setInputCol(lemmatizedContentCol)
+        val ngram = NGramOnSentenceData().setInputCol(LEMMATIZED_CONTENT_COL_NAME)
         dataset.show(10, false)
         val ngramsContent = ngram.transform(dataset)
         ngramsContent.show(10, false)

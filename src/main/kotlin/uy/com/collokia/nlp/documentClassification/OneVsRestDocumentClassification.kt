@@ -23,7 +23,7 @@ import uy.com.collokia.common.utils.machineLearning.PREDICTION_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.rdd.readDzoneDataFromJson
 import uy.com.collokia.nlp.documentClassification.vtm.*
-import uy.com.collokia.nlp.parser.mate.lemmatizer.lemmatizedContentCol
+import uy.com.collokia.nlp.parser.mate.lemmatizer.LEMMATIZED_CONTENT_COL_NAME
 import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
 
 const val OVR_MODEL = "./data/model/ovrDectisonTree"
@@ -65,12 +65,12 @@ fun generateVTM(corpus: Dataset<Row>,
                 isTest: Boolean = false): Dataset<Row> {
 
     val ngramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(),
-            inputColName = lemmatizedContentCol,
+            inputColName = LEMMATIZED_CONTENT_COL_NAME,
             toLowercase = true))
 
-    val parsedCorpus = ngramPipe.fit(corpus).transform(corpus).drop(lemmatizedContentCol,
-            lemmatizedContentCol + "_" + tokenizerOutputCol,
-            lemmatizedContentCol + "_" + removeOutputCol)
+    val parsedCorpus = ngramPipe.fit(corpus).transform(corpus).drop(LEMMATIZED_CONTENT_COL_NAME,
+            LEMMATIZED_CONTENT_COL_NAME + "_" + tokenizerOutputCol,
+            LEMMATIZED_CONTENT_COL_NAME + "_" + removeOutputCol)
 
     val vtmModel = loadPipelineModel(isTest = isTest,
             isRunLocal = isRunLocal,
@@ -80,8 +80,8 @@ fun generateVTM(corpus: Dataset<Row>,
             inputColName = (ngramPipe.stages.last() as NGramInRawInput).outputCol)
 
 
-    val vtm = vtmModel.transform(parsedCorpus).drop(lemmatizedContentCol + "_" + ngramOutputCol,
-            lemmatizedContentCol + "_" + cvModelOutputCol)
+    val vtm = vtmModel.transform(parsedCorpus).drop(LEMMATIZED_CONTENT_COL_NAME + "_" + ngramOutputCol,
+            LEMMATIZED_CONTENT_COL_NAME + "_" + cvModelOutputCol)
 
     val indexer = StringIndexer().setInputCol("category").setOutputCol(LABEL_COL_NAME)
 
