@@ -14,10 +14,10 @@ import org.apache.spark.sql.types.DataTypes
 import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 
 
-const val filteredContentColName = "filteredContent"
+const val FILTERED_CONTENT_COL_NAME = "filteredContent"
 
 class ContentFilter : Transformer {
 
@@ -29,8 +29,8 @@ class ContentFilter : Transformer {
 
     constructor(potentialTags: List<String>,
                 sparkSession: SparkSession,
-                inputColName: String = tokenizedContent,
-                outputColName: String = filteredContentColName) {
+                inputColName: String = TOKENIZED_CONTENT_COL_NAME,
+                outputColName: String = FILTERED_CONTENT_COL_NAME) {
 
         this.potentialTags = potentialTags
         this.sparkSession = sparkSession

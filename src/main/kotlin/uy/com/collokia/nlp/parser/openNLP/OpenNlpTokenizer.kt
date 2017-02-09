@@ -21,22 +21,22 @@ import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import java.io.Serializable
 
-const val tokenizedContent = "tokenizedContent"
+const val TOKENIZED_CONTENT_COL_NAME = "tokenizedContenT"
 
 // "opennlp/models/en-sent.bin"
-val englishSentenceDetectorModelName: String  by lazy {
+val EN_SENTENCE_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_EN).absolutePath
 }
 //= "opennlp/models/es-sent.bin"
-val spanishSentenceDetectorModelName: String  by lazy {
+val ES_SENTENCE_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_ES).absolutePath
 }
 // "opennlp/models/en-token.bin"
-val englishTokenizerModelName: String  by lazy {
+val EN_TOKEN_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_EN).absolutePath
 }
 // "opennlp/models/es-token.bin"
-val spanishTokenizerModelName: String  by lazy {
+val ES_TOKEN_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_ES).absolutePath
 }
 
@@ -56,25 +56,25 @@ class OpenNlpTokenizer : Transformer, Serializable {
                 inputColName: String = "content",
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 isOutputRaw: Boolean = true,
-                sentenceDetectorModelName: String = englishSentenceDetectorModelName,
-                tokenizerModelName: String = englishTokenizerModelName
+                sentenceDetectorModelName: String = EN_SENTENCE_MODEL_NAME,
+                tokenizerModelName: String = EN_TOKEN_MODEL_NAME
     ) {
 
         //SentenceModel()
 
         this.language = language
-        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(englishSentenceDetectorModelName)
-        else if (language == LANGUAGE.SPANISH) OpenNlpSentenceDetectorWrapper(spanishSentenceDetectorModelName)
+        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(EN_SENTENCE_MODEL_NAME)
+        else if (language == LANGUAGE.SPANISH) OpenNlpSentenceDetectorWrapper(ES_SENTENCE_MODEL_NAME)
         else OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
 
-        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(englishTokenizerModelName)
-        else if (language == LANGUAGE.SPANISH) OpenNlpTokenizerWrapper(spanishTokenizerModelName)
+        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(EN_TOKEN_MODEL_NAME)
+        else if (language == LANGUAGE.SPANISH) OpenNlpTokenizerWrapper(ES_TOKEN_MODEL_NAME)
         else OpenNlpTokenizerWrapper(tokenizerModelName)
 
         this.isRaw = isOutputRaw
         this.sparkSession = sparkSession
         this.inputColName = inputColName
-        this.outputColName = tokenizedContent
+        this.outputColName = TOKENIZED_CONTENT_COL_NAME
 
         if (isOutputRaw) {
             val tokenizer = UDF1 { content: String ->

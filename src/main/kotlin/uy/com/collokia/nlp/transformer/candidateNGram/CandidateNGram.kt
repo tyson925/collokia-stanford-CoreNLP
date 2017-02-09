@@ -9,7 +9,7 @@ import scala.collection.mutable.WrappedArray
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
-const val candidateNgramOutputColName = "candidates"
+const val CANDIDATE_NGRAM_OUTPUT_COL_NAME = "candidates"
 
 class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram> {
 

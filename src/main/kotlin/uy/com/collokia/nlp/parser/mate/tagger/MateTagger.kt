@@ -21,24 +21,24 @@ import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.NLPToken
 import uy.com.collokia.nlp.parser.PosToken
+import uy.com.collokia.nlp.parser.mate.lemmatizer.ENGLISH_LEMMATIZER_MODEL_NAME
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
-import uy.com.collokia.nlp.parser.mate.lemmatizer.englishLemmatizerModelName
-import uy.com.collokia.nlp.parser.mate.lemmatizer.spanishLemmatizerModelName
+import uy.com.collokia.nlp.parser.mate.lemmatizer.SPANISH_LEMMATIZER_MODEL_NAME
 import uy.com.collokia.nlp.parser.nlpTokenType
-import uy.com.collokia.nlp.parser.openNLP.tokenizedContent
+import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.io.Serializable
 import java.util.*
 
 //"mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.postagger.model"
-val englishTaggerModelName: String  by lazy {
+val ENGLISH_TAGGER_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_EN).absolutePath
 }
 //"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.postagger.model"
-val spanishTaggerModelName: String  by lazy {
+val SPANISH_TAGGER_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_ES).absolutePath
 }
 
-const val taggerOutputColName = "taggedContent"
+const val TAGGER_OUTPUT_COL_NAME = "taggedContent"
 
 data class TaggedToken(var token: String, var lemma: String, var posTag : String) : Serializable
 
@@ -60,17 +60,17 @@ class MateTagger : Transformer, Serializable {
 
     constructor(sparkSession: SparkSession,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
-                inputColName: String = tokenizedContent,
-                outputColName: String = taggerOutputColName) {
+                inputColName: String = TOKENIZED_CONTENT_COL_NAME,
+                outputColName: String = TAGGER_OUTPUT_COL_NAME) {
 
         this.language = language
         this.sparkSession = sparkSession
 
-        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) englishLemmatizerModelName else spanishLemmatizerModelName
+        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) ENGLISH_LEMMATIZER_MODEL_NAME else SPANISH_LEMMATIZER_MODEL_NAME
         val options = arrayOf("-model", lemmatizerModel)
         lemmatizerWrapper = LematizerWrapper(options)
 
-        val taggerModelName = if (language == LANGUAGE.ENGLISH) englishTaggerModelName else spanishTaggerModelName
+        val taggerModelName = if (language == LANGUAGE.ENGLISH) ENGLISH_TAGGER_MODEL_NAME else SPANISH_TAGGER_MODEL_NAME
         taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
         this.inputColName = inputColName
         this.outputColName = outputColName
