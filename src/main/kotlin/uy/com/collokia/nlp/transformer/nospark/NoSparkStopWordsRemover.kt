@@ -1,38 +1,16 @@
 package uy.com.collokia.nlp.transformer.nospark
 
-import org.apache.spark.ml.Transformer
-import org.apache.spark.ml.feature.RegexTokenizer
 import org.apache.spark.ml.feature.StopWordsRemover
-import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.sql.types.DataTypes
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
-import scala.Function1
-import scala.collection.Seq
-import scala.collection.mutable.WrappedArray
-import uy.com.collokia.common.utils.nospark.NoSparkTransformer
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 
-class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTransformer() {
-
-    override fun transformSchema(schema: StructType): StructType {
-        //add the output field to the schema
-        val inputType = schema.apply(stopWordsRemover.inputCol).dataType()
-        if (!inputType.sameType(DataTypes.createArrayType(DataTypes.StringType))){
-            throw  IllegalArgumentException("Input column ${stopWordsRemover.inputCol} should be of type Array<String>.")
-        }
-
-        if (schema.fieldNames().contains(stopWordsRemover.outputCol)) {
-            throw  IllegalArgumentException("Output column ${stopWordsRemover.outputCol} already exists.")
-        }
-        val outputFields = schema.fields() +
-                StructField(stopWordsRemover.outputCol, DataTypes.createArrayType(DataTypes.StringType), false, org.apache.spark.sql.types.Metadata.empty())
-        return StructType(outputFields)
+class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTransformer1to1<SimpleDocumentAnalyzed, SimpleDocumentAnalyzed, List<String>, List<String>>(
+        SimpleDocumentAnalyzed::analyzedContent,
+        SimpleDocumentAnalyzed::analyzedContent
+) {
+    override fun transfromData(dataIn: List<String>): List<String> {
+        return stopWordsRemover.transform(dataIn)
     }
-
-    override fun copy(extra: ParamMap?): Transformer = defaultCopy<NoSparkRegexTokenizer>(extra)
-
-
-    override fun uid(): String = org.apache.spark.ml.util.`Identifiable$`.`MODULE$`.randomUID("NoSparkStopWordsRemover")
 
     class ExposedStopWordsRemover(_stopWordsRemover: StopWordsRemover) : StopWordsRemover() {
         init {
@@ -44,23 +22,17 @@ class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTran
         val stopWordsSet by lazy { stopWords.toSet() }
         val lowerStopWordsSet by lazy { stopWords.map { it?.toLowerCase() }.toSet() }
 
-        fun transform(dataIn: WrappedArray<String>): List<String> {
+        fun transform(dataIn: List<String>): List<String> {
             return if (caseSensitive) {
-                (dataIn.array() as Array<String>).filter { t: String -> !stopWordsSet.contains(t) }
+                dataIn.filter { t: String ->
+                    !stopWordsSet.contains(t)
+                }
             } else {
                 // TODO: support user locale (SPARK-15064)
-                (dataIn.array() as Array<String>).filter { t: String -> !lowerStopWordsSet.contains(t.toLowerCase()) }
+                dataIn.filter { t: String -> !lowerStopWordsSet.contains(t.toLowerCase()) }
             }
         }
-
-
-
     }
-
     val stopWordsRemover = ExposedStopWordsRemover(_stopWordsRemover)
 
-
-    override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
-        return mapIn + (stopWordsRemover.outputCol to stopWordsRemover.transform(mapIn[stopWordsRemover.inputCol] as WrappedArray<String>).toTypedArray())
-    }
 }

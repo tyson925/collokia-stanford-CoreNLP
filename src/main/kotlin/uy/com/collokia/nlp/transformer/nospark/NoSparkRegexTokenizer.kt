@@ -1,44 +1,20 @@
 package uy.com.collokia.nlp.transformer.nospark
 
-import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.RegexTokenizer
-import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.sql.types.DataTypes
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
-import scala.Function1
 import scala.collection.JavaConversions
-import scala.collection.Seq
-import scala.collection.mutable.WrappedArray
-import uy.com.collokia.common.utils.nospark.NoSparkTransformer
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 
-class NoSparkRegexTokenizer(val regexTokenizer: RegexTokenizer) : NoSparkTransformer() {
+class NoSparkRegexTokenizer(val regexTokenizer: RegexTokenizer) : NoSparkTransformer1to1<SimpleDocument, SimpleDocumentAnalyzed, String,List<String>>(
+        SimpleDocument::content,
+        SimpleDocumentAnalyzed::analyzedContent
+) {
 
-    override fun transformSchema(schema: StructType): StructType {
-        //add the output field to the schema
-        //val inputType = schema.apply(_inputCol).dataType()
-        if (schema.fieldNames().contains(regexTokenizer.outputCol)) {
-            throw  IllegalArgumentException("Output column ${regexTokenizer.outputCol} already exists.")
-        }
-        val outputFields = schema.fields() +
-                StructField(regexTokenizer.outputCol, DataTypes.createArrayType(DataTypes.StringType), false, org.apache.spark.sql.types.Metadata.empty())
-        return StructType(outputFields)
+    private val transformFunc by lazy{ regexTokenizer.createTransformFunc() }
+
+    override fun transfromData(dataIn:String): List<String> {
+        return  JavaConversions.seqAsJavaList(transformFunc.apply(dataIn))
+
     }
-
-    override fun copy(extra: ParamMap?): Transformer = defaultCopy<NoSparkRegexTokenizer>(extra)
-
-
-    override fun uid(): String = org.apache.spark.ml.util.`Identifiable$`.`MODULE$`.randomUID("NoSparkStopWordsRemover")
-
-
-    private val transformFunc = regexTokenizer.createTransformFunc()
-
-    override fun transfromRow(mapIn: Map<String, Any>): Map<String, Any> {
-        return mapIn + (regexTokenizer.outputCol to
-                WrappedArray.make<String>(JavaConversions.seqAsJavaList(
-                        transformFunc.apply(mapIn[regexTokenizer.inputCol].toString())
-                ).toTypedArray()
-                ))
-    }
-
 }

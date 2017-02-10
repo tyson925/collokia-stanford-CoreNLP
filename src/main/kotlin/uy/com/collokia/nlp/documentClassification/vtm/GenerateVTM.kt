@@ -14,10 +14,15 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentNgrams
 import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
 import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
+import uy.com.collokia.common.utils.nospark.NoSparkPipeline
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer
+import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
 import uy.com.collokia.nlp.transformer.ngram.NoSparkNGramInRawInput
 import uy.com.collokia.nlp.transformer.nospark.NoSparkRegexTokenizer
@@ -92,19 +97,18 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
     return arrayOf(tokenizer, remover, ngram)
 }
 
-fun v2constructNgrams(stopwords: Set<String> = setOf(),
-                      inputColName: String = "content",
+fun v2constructNgrams(pipeline: NoSparkPipeline<SimpleDocument,SimpleDocument>,
+                      stopwords: Set<String> = setOf(),
                       toLowercase: Boolean = false,
-                      minTokenLength: Int = 2): Array<NoSparkTransformer> {
+                      minTokenLength: Int = 2): NoSparkPipeline<SimpleDocument, SimpleDocumentNgrams> {
 
     val tokenizer = NoSparkRegexTokenizer(
-            RegexTokenizer().setInputCol(inputColName).setOutputCol(inputColName + "_" + tokenizerOutputCol)
+            RegexTokenizer()
                     .setMinTokenLength(minTokenLength)
                     .setToLowercase(toLowercase)
                     .setPattern("\\w+")
                     .setGaps(false)
     )
-
 
     val stopwordsApplied = if (stopwords.isEmpty()) {
         println("Load default english stopwords...")
@@ -115,16 +119,18 @@ fun v2constructNgrams(stopwords: Set<String> = setOf(),
     }
 
     val remover = NoSparkStopWordsRemover(
-            StopWordsRemover().setInputCol(tokenizer.regexTokenizer.outputCol).setOutputCol(inputColName + "_" + removeOutputCol)
+            StopWordsRemover()
                     .setStopWords(stopwordsApplied)
                     .setCaseSensitive(false)
     )
 
-    val ngram = NoSparkNGramInRawInput(
-            NGramInRawInput().setInputCol(remover.stopWordsRemover.getOutputCol()).setOutputCol(inputColName + "_" + ngramOutputCol)
-    )
+    val ngram = NoSparkNGramInRawInput(NGramInRawInput())
 
-    return arrayOf(tokenizer, remover, ngram)
+    return pipeline
+            .transform(tokenizer)
+            .transform(remover)
+            .transform(ngram)
+
 }
 
 fun constructVTM(vocabSize: Int = CONTENT_VTM_VOC_SIZE, vtmInputCol: String): Array<PipelineStage> {

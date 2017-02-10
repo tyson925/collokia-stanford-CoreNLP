@@ -3,29 +3,21 @@ package uy.com.collokia.nlp.transformer.ngram
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.sql.types.*
-import scala.Function1
 import scala.collection.mutable.WrappedArray
-import uy.com.collokia.common.utils.nospark.NoSparkTransformer
-import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
+
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentNgrams
+import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 
 
+class NoSparkNGramInRawInput(val nGramRawInput: NGramInRawInput) : NoSparkTransformer1to1<SimpleDocumentAnalyzed, SimpleDocumentNgrams, List<String>, List<List<Map<String,String>>>>(
+        SimpleDocumentAnalyzed::analyzedContent,
+        SimpleDocumentNgrams::analyzedContent
+) {
+    override fun transfromData(dataIn: List<String>): List<List<Map<String, String>>> {
 
-class NoSparkNGramInRawInput(val nGramRawInput: NGramInRawInput) : NoSparkTransformer(){
-
-    override fun transformSchema(schema: StructType): StructType {
-        //add the output field to the schema
-        val inputType = schema.apply(nGramRawInput.inputCol).dataType()
-        if (!inputType.sameType(DataTypes.createArrayType(DataTypes.StringType))){
-            throw  IllegalArgumentException("Input column ${nGramRawInput.inputCol} should be of type Array<String>.")
-        }
-
-        if (schema.fieldNames().contains(nGramRawInput.outputCol)) {
-            throw  IllegalArgumentException("Output column ${nGramRawInput.outputCol} already exists.")
-        }
-        val outputFields = schema.fields() +
-                StructField(nGramRawInput.outputCol, DataTypes.createArrayType(DataTypes.StringType), false, Metadata.empty())
-        return StructType(outputFields)
     }
+
 
 
     val transformFunc = nGramRawInput.createTransformFunc()
