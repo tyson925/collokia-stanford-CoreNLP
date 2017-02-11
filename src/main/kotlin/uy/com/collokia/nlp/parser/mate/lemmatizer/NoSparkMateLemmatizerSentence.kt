@@ -5,19 +5,35 @@ package uy.com.collokia.nlp.parser.mate.lemmatizer
 import is2.data.SentenceData09
 import scala.collection.JavaConverters
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
-import uy.com.collokia.common.utils.nospark.NoSparkParamsDef
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedBow
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedSentences
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.NLPToken
 import java.io.Serializable
 import java.util.*
 
+class SimpleDocumentAnalyzedGrammar(
+        id: String ="",
+        title: String="",
+        url: String="",
+        content: String="",
+        tags: List<String> =listOf(),
+        category: String ="",
+        var analyzedContent: List<List<scala.collection.mutable.Map<String,String>>> = listOf()) : SimpleDocument(
+        id,
+        title,
+        url,
+        content,
+        tags,
+        category
+)
 
-class NoSparkMateLemmatizer(val language: LANGUAGE = LANGUAGE.ENGLISH
-) : NoSparkTransformer1to1<Array<Array<String>>, Array<Array<scala.collection.mutable.Map<String,String>>>>(
-        NoSparkParamsDef(SimpleDocument::content.name, Array<Array<String>>::class.java),
-        NoSparkParamsDef(SimpleDocumentAnalyzed::analyzedContent.name, Array<Array<scala.collection.mutable.Map<String,String>>>::class.java)
+
+class NoSparkMateLemmatizerGrammar(val language: LANGUAGE = LANGUAGE.ENGLISH
+) : NoSparkTransformer1to1<SimpleDocumentAnalyzedSentences, SimpleDocumentAnalyzedGrammar, List<List<String>>, List<List<scala.collection.mutable.Map<String,String>>>>(
+        SimpleDocumentAnalyzedSentences::analyzedContent,
+        SimpleDocumentAnalyzedGrammar::analyzedContent
 ), Serializable {
 
     val lemmatizerWrapper by lazy{
@@ -26,10 +42,10 @@ class NoSparkMateLemmatizer(val language: LANGUAGE = LANGUAGE.ENGLISH
         LematizerWrapper(options)
     }
 
-    override fun transfromData(dataIn: Array<Array<String>>): Array<Array<scala.collection.mutable.Map<String,String>>> {
+    override fun transfromData(dataIn: List<List<String>>): List<List<scala.collection.mutable.Map<String,String>>> {
         val sentences = dataIn
         val lemmatizer = lemmatizerWrapper.get()
-        val results = ArrayList<Array<scala.collection.mutable.Map<String, String>>>(sentences.size)
+        val results = ArrayList<List<scala.collection.mutable.Map<String, String>>>(sentences.size)
         (0..sentences.size - 1).forEach { sentenceNum ->
 
             val tokens = sentences[sentenceNum]
@@ -56,44 +72,40 @@ class NoSparkMateLemmatizer(val language: LANGUAGE = LANGUAGE.ENGLISH
                         NLPToken::indexInContent.name to (contentIndex + tokenIndex).toString()
                 )).asScala()
                 values
-            }.toTypedArray()
+            }
 
             results.add(sentenceNum, lemmatizedTokens)
         }
-        return results.toTypedArray()
+        return results
     }
 }
 
-class NoSparkMateLemmatizerRaw(language: LANGUAGE = LANGUAGE.ENGLISH
-) : NoSparkTransformer1to1<Array<Array<String>>, Array<Array<String>>>(
-        NoSparkParamsDef(SimpleDocument::content.name, Array<Array<String>>::class.java),
-        NoSparkParamsDef(SimpleDocumentAnalyzed::analyzedContent.name, Array<Array<String>>::class.java)
+class NoSparkMateLemmatizerSentences(language: LANGUAGE = LANGUAGE.ENGLISH
+) : NoSparkTransformer1to1<SimpleDocumentAnalyzedSentences, SimpleDocumentAnalyzedSentences, List<List<String>>, List<List<String>>>(
+        SimpleDocumentAnalyzedSentences::analyzedContent,
+        SimpleDocumentAnalyzedSentences::analyzedContent
 ), Serializable {
-    val lemmatizer = NoSparkMateLemmatizer(language)
-    override fun transfromData(dataIn: Array<Array<String>>): Array<Array<String>> {
-        return lemmatizer.transfromData(dataIn).map { s->
-            s.map{ t->
-                t[NLPToken::lemma.name].get()
-            }.toTypedArray()
-
-        }.toTypedArray()
-    }
-
-}
-
-class NoSparkMateLemmatizerRawRaw(language: LANGUAGE = LANGUAGE.ENGLISH
-) : NoSparkTransformer1to1<Array<Array<String>>, Array<String>>(
-        NoSparkParamsDef(SimpleDocument::content.name, Array<Array<String>>::class.java),
-        NoSparkParamsDef(SimpleDocumentAnalyzed::analyzedContent.name, Array<String>::class.java)
-), Serializable {
-    val lemmatizer = NoSparkMateLemmatizer(language)
-    override fun transfromData(dataIn: Array<Array<String>>): Array<String> {
+    val lemmatizer = NoSparkMateLemmatizerGrammar(language)
+    override fun transfromData(dataIn: List<List<String>>): List<List<String>> {
         return lemmatizer.transfromData(dataIn).map { s->
             s.map{ t->
                 t[NLPToken::lemma.name].get()
             }
-
-        }.flatten().toTypedArray()
+        }
     }
+}
 
+class NoSparkMateLemmatizerBow(language: LANGUAGE = LANGUAGE.ENGLISH
+) : NoSparkTransformer1to1<SimpleDocumentAnalyzedSentences, SimpleDocumentAnalyzedBow, List<List<String>>, List<String>>(
+        SimpleDocumentAnalyzedSentences::analyzedContent,
+        SimpleDocumentAnalyzedBow::analyzedContent
+), Serializable {
+    val lemmatizer = NoSparkMateLemmatizerGrammar(language)
+    override fun transfromData(dataIn: List<List<String>>): List<String> {
+        return lemmatizer.transfromData(dataIn).map { s->
+            s.map{ t->
+                t[NLPToken::lemma.name].get()
+            }
+        }.flatten()
+    }
 }

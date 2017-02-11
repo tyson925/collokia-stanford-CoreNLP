@@ -3,12 +3,12 @@ package uy.com.collokia.nlp.transformer.nospark
 import org.apache.spark.ml.feature.RegexTokenizer
 import scala.collection.JavaConversions
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedBow
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 
-class NoSparkRegexTokenizer(val regexTokenizer: RegexTokenizer) : NoSparkTransformer1to1<SimpleDocument, SimpleDocumentAnalyzed, String,List<String>>(
+class NoSparkRegexTokenizer(val regexTokenizer: RegexTokenizer) : NoSparkTransformer1to1<SimpleDocument, SimpleDocumentAnalyzedBow, String,List<String>>(
         SimpleDocument::content,
-        SimpleDocumentAnalyzed::analyzedContent
+        SimpleDocumentAnalyzedBow::analyzedContent
 ) {
 
     private val transformFunc by lazy{ regexTokenizer.createTransformFunc() }

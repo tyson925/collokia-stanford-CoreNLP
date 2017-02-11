@@ -15,18 +15,15 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentNgrams
 import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
 import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
 import uy.com.collokia.common.utils.nospark.NoSparkPipeline
-import uy.com.collokia.common.utils.nospark.NoSparkTransformer
-import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
-import uy.com.collokia.nlp.transformer.ngram.NoSparkNGramInRawInput
+import uy.com.collokia.nlp.transformer.ngram.NoSparkNGramBowInput
+import uy.com.collokia.nlp.transformer.ngram.SimpleDocumentNgramsBow
 import uy.com.collokia.nlp.transformer.nospark.NoSparkRegexTokenizer
-import uy.com.collokia.nlp.transformer.nospark.NoSparkStopWordsRemover
+import uy.com.collokia.nlp.transformer.nospark.NoSparkStopWordsRemoverBow
 
 
 @Suppress("UNUSED_VARIABLE")
@@ -97,10 +94,10 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
     return arrayOf(tokenizer, remover, ngram)
 }
 
-fun v2constructNgrams(pipeline: NoSparkPipeline<SimpleDocument,SimpleDocument>,
+fun v2constructNgrams(pipeline: NoSparkPipeline<SimpleDocument, SimpleDocument>,
                       stopwords: Set<String> = setOf(),
                       toLowercase: Boolean = false,
-                      minTokenLength: Int = 2): NoSparkPipeline<SimpleDocument, SimpleDocumentNgrams> {
+                      minTokenLength: Int = 2): NoSparkPipeline<SimpleDocument, SimpleDocumentNgramsBow> {
 
     val tokenizer = NoSparkRegexTokenizer(
             RegexTokenizer()
@@ -118,13 +115,13 @@ fun v2constructNgrams(pipeline: NoSparkPipeline<SimpleDocument,SimpleDocument>,
         stopwords.toTypedArray()
     }
 
-    val remover = NoSparkStopWordsRemover(
+    val remover = NoSparkStopWordsRemoverBow(
             StopWordsRemover()
                     .setStopWords(stopwordsApplied)
                     .setCaseSensitive(false)
     )
 
-    val ngram = NoSparkNGramInRawInput(NGramInRawInput())
+    val ngram = NoSparkNGramBowInput(NGramInRawInput())
 
     return pipeline
             .transform(tokenizer)

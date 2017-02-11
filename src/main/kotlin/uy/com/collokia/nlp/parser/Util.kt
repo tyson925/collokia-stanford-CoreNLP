@@ -6,7 +6,6 @@ package uy.com.collokia.nlp.parser
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Encoders
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.DataTypes
@@ -14,15 +13,13 @@ import org.apache.spark.sql.types.MapType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedRaw
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedBow
 import uy.com.collokia.common.data.dataClasses.stackoverflow.SoLitleModel.SOThreadExtractValues
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizerRaw
-import uy.com.collokia.nlp.parser.mate.lemmatizer.NoSparkMateLemmatizer
+import uy.com.collokia.common.utils.nospark.NoSparkPipeline
+import uy.com.collokia.nlp.parser.mate.lemmatizer.*
 import uy.com.collokia.nlp.parser.mate.parser.MateParser
 import uy.com.collokia.nlp.parser.mate.tagger.MateTagger
-import uy.com.collokia.nlp.parser.openNLP.NoSparkOpenNlpTokenizer
+import uy.com.collokia.nlp.parser.openNLP.NoSparkOpenNlpTokenizerSentences
 import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
 import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
 import java.io.Serializable
@@ -142,34 +139,27 @@ fun lemmatizeContent(sparkSession: SparkSession,
     return analyzedData
 }
 
-fun _v2lemmatizeContent(sparkSession: SparkSession,
-                        dataset: Dataset<SimpleDocument>,
-                        language: LANGUAGE = LANGUAGE.ENGLISH, rawOutput: Boolean = false): Dataset<Row> {
+fun v2lemmatizeContent(pipeline: NoSparkPipeline<SimpleDocument, SimpleDocument>,
+                       language: LANGUAGE = LANGUAGE.ENGLISH): NoSparkPipeline<SimpleDocument, SimpleDocumentAnalyzedGrammar> {
 
-    val tokenizer = NoSparkOpenNlpTokenizer(sparkSession, isOutputRaw = rawOutput, language = language)
-    val lemmatizer = NoSparkMateLemmatizer(sparkSession, language = language).setInputColName(tokenizer.outputColName).setOutputColName(SimpleDocumentAnalyzed::analyzedContent.name)
+    val tokenizer = NoSparkOpenNlpTokenizerSentences(language = language)
+    val lemmatizer = NoSparkMateLemmatizerGrammar(language = language)
 
-    val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
-
-    val analyzer = textAnalyzer.fit(dataset.toDF())
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName)
-    return analyzedData
+    return pipeline
+            .transform(tokenizer)
+            .transform(lemmatizer)
 }
 
 
-fun v2lemmatizeContent(sparkSession: SparkSession,
-                       dataset: Dataset<SimpleDocument>,
-                       language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<SimpleDocumentAnalyzed> {
+fun v2lemmatizeContentBow(pipeline: NoSparkPipeline<SimpleDocument, SimpleDocument>,
+                          language: LANGUAGE = LANGUAGE.ENGLISH): NoSparkPipeline<SimpleDocument, SimpleDocumentAnalyzedBow> {
 
-    return _v2lemmatizeContent(sparkSession, dataset, language, false).`as`(Encoders.bean(SimpleDocumentAnalyzed::class.java))
-}
+    val tokenizer = NoSparkOpenNlpTokenizerSentences(language = language)
+    val lemmatizer = NoSparkMateLemmatizerBow(language = language)
 
-
-fun v2lemmatizeContentRaw(sparkSession: SparkSession,
-                          dataset: Dataset<SimpleDocument>,
-                          language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<SimpleDocumentAnalyzedRaw> {
-
-    return _v2lemmatizeContent(sparkSession, dataset, language, false).`as`(Encoders.bean(SimpleDocumentAnalyzedRaw::class.java))
+    return pipeline
+            .transform(tokenizer)
+            .transform(lemmatizer)
 }
 
 fun ngramLemmatizeContent(sparkSession: SparkSession,

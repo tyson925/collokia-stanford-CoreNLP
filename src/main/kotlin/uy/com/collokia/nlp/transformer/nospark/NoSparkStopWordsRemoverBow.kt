@@ -1,12 +1,12 @@
 package uy.com.collokia.nlp.transformer.nospark
 
 import org.apache.spark.ml.feature.StopWordsRemover
-import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzed
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentAnalyzedBow
 import uy.com.collokia.common.utils.nospark.NoSparkTransformer1to1
 
-class NoSparkStopWordsRemover(_stopWordsRemover: StopWordsRemover) : NoSparkTransformer1to1<SimpleDocumentAnalyzed, SimpleDocumentAnalyzed, List<String>, List<String>>(
-        SimpleDocumentAnalyzed::analyzedContent,
-        SimpleDocumentAnalyzed::analyzedContent
+class NoSparkStopWordsRemoverBow(_stopWordsRemover: StopWordsRemover) : NoSparkTransformer1to1<SimpleDocumentAnalyzedBow, SimpleDocumentAnalyzedBow, List<String>, List<String>>(
+        SimpleDocumentAnalyzedBow::analyzedContent,
+        SimpleDocumentAnalyzedBow::analyzedContent
 ) {
     override fun transfromData(dataIn: List<String>): List<String> {
         return stopWordsRemover.transform(dataIn)

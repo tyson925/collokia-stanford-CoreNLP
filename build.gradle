@@ -1,5 +1,5 @@
 group 'com.collokia'
-version '1.0.5.1.4'
+version '1.2'
 description 'collokia spark natural language processing stuffs'
 
 buildscript {

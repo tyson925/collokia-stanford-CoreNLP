@@ -11,7 +11,7 @@ import scala.reflect.`ClassTag$`
 import scala.runtime.AbstractFunction1
 import java.io.Serializable
 
-class VectorUnaryTransformer() : UnaryTransformer<WrappedArray<Double>, Vector, VectorUnaryTransformer>() {
+class VectorUnaryTransformer : UnaryTransformer<WrappedArray<Double>, Vector, VectorUnaryTransformer>() {
 
     override fun uid(): String? {
         return "uid1111111"
