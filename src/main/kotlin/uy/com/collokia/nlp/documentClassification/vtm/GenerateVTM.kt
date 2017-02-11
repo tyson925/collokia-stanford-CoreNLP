@@ -15,6 +15,7 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import scala.Tuple2
 import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocument
+import uy.com.collokia.common.data.dataClasses.corpus.SimpleDocumentNgramsSentences
 import uy.com.collokia.common.utils.machineLearning.FEATURE_COL_NAME
 import uy.com.collokia.common.utils.machineLearning.LABEL_COL_NAME
 import uy.com.collokia.common.utils.nlp.*
@@ -94,10 +95,10 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
     return arrayOf(tokenizer, remover, ngram)
 }
 
-fun v2constructNgrams(pipeline: NoSparkPipeline<SimpleDocument, SimpleDocument>,
+fun <T:Any>v2constructNgrams(pipeline: NoSparkPipeline<T, SimpleDocument>,
                       stopwords: Set<String> = setOf(),
                       toLowercase: Boolean = false,
-                      minTokenLength: Int = 2): NoSparkPipeline<SimpleDocument, SimpleDocumentNgramsBow> {
+                      minTokenLength: Int = 2): NoSparkPipeline<T, SimpleDocumentNgramsSentences> {
 
     val tokenizer = NoSparkRegexTokenizer(
             RegexTokenizer()
