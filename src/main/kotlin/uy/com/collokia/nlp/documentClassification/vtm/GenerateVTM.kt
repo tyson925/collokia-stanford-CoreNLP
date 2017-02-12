@@ -98,7 +98,7 @@ fun constructNgrams(stopwords: Set<String> = setOf(),
 fun <T:Any>v2constructNgrams(pipeline: NoSparkPipeline<T, SimpleDocument>,
                       stopwords: Set<String> = setOf(),
                       toLowercase: Boolean = false,
-                      minTokenLength: Int = 2): NoSparkPipeline<T, SimpleDocumentNgramsSentences> {
+                      minTokenLength: Int = 2): NoSparkPipeline<T, SimpleDocumentNgramsBow> {
 
     val tokenizer = NoSparkRegexTokenizer(
             RegexTokenizer()
