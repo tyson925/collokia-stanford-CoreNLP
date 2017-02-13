@@ -8,14 +8,10 @@ import java.io.Serializable
 import java.util.*
 
 
-class ConvertFunctionOnRawData : AbstractFunction1<WrappedArray<String>, Array<String>>, Serializable {
+class ConvertFunctionOnRawData(ngram_separator: String = DEFAULT_NGRAM_SEPARATOR) : AbstractFunction1<WrappedArray<String>, Array<String>>(), Serializable {
 
 
-    val NGRAM_SEPARATOR : String
-
-    constructor(ngram_separator : String = DEFAULT_NGRAM_SEPARATOR){
-        this.NGRAM_SEPARATOR = ngram_separator
-    }
+    val NGRAM_SEPARATOR : String = ngram_separator
 
     companion object {
 

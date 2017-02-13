@@ -11,7 +11,7 @@ import uy.com.collokia.nlp.transformer.PersistableUnaryTransformer
 
 const val CANDIDATE_NGRAM_OUTPUT_COL_NAME = "candidates"
 
-class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>, CandidateNGram> {
+class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>, Array<String>, CandidateNGram> {
 
     val language : LANGUAGE
 
@@ -19,7 +19,7 @@ class CandidateNGram : PersistableUnaryTransformer<WrappedArray<WrappedArray<Wra
         this.language = language
     }
 
-    override fun createTransformFunc(): Function1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>> {
+    override fun createTransformFunc(): Function1<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>, Array<String>> {
         return ExtractFunction(language)
     }
 

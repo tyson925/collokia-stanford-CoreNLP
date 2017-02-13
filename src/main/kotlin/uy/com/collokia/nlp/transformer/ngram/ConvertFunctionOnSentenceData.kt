@@ -11,7 +11,8 @@ import java.util.*
 
 @Suppress("unused")
 class ConvertFunctionOnSentenceData :
-        AbstractFunction1<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>, Array<Array<Map<String, String>>>>(), Serializable {
+        AbstractFunction1<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>,
+                Array<Array<Map<String, String>>>>(), Serializable {
 
     companion object {
         const val NUMBER_OF_NGRAMS = 3
@@ -55,6 +56,7 @@ class ConvertFunctionOnSentenceData :
     private fun wordNGramsLevel(tokensInfo: List<scala.collection.immutable.Map<String, String>>,
                                 N: Int,
                                 separator: String = DEFAULT_NGRAM_SEPARATOR)
+
             : List<Map<String, String>> {
 
         val RET: List<Map<String, String>>

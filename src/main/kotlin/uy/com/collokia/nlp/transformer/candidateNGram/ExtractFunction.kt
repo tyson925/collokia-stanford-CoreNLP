@@ -3,11 +3,16 @@ package uy.com.collokia.nlp.transformer.candidateNGram
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import scala.runtime.AbstractFunction1
+import uy.com.collokia.nlp.parser.DEFAULT_NGRAM_SEPARATOR
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.NLPToken
+import uy.com.collokia.nlp.parser.PosToken
 import java.io.Serializable
 import java.util.*
 
-class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray<String>>>, Array<String>>, Serializable {
+class ExtractFunction :
+        AbstractFunction1<WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>,
+                Array<String>>, Serializable {
 
     companion object {
         const val NUMBER_OF_NGRAMS = 3
@@ -19,25 +24,31 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
         this.language = language
     }
 
-    override fun apply(content: WrappedArray<WrappedArray<WrappedArray<String>>>): Array<String> {
+    override fun apply(content: WrappedArray<WrappedArray<scala.collection.immutable.Map<String, String>>>)
+            : Array<String> {
         val sentences = JavaConversions.seqAsJavaList(content)
         //println(sentences.javaClass.kotlin)
         return sentences.flatMap { sentence ->
             //println(sentence.javaClass.kotlin)
-            wordNGrams(sentence, NUMBER_OF_NGRAMS, true, " ")
+            val res = wordNGrams(sentence, NUMBER_OF_NGRAMS, true, separator = DEFAULT_NGRAM_SEPARATOR)
+            res.asIterable()
         }.toTypedArray()
 
     }
 
 
-    fun wordNGrams(sentence: WrappedArray<WrappedArray<String>>, N: Int, oneToN: Boolean, separator: String = "_"): List<String> {
+    fun wordNGrams(sentence: WrappedArray<scala.collection.immutable.Map<String, String>>,
+                   N: Int,
+                   oneToN: Boolean,
+                   separator: String = "_"): Array<String> {
+
         val RET = LinkedList<String>()
 
         for (i in (if (oneToN) 1 else N)..N + 1 - 1) {
             RET.addAll(wordNGramsLevel(JavaConversions.seqAsJavaList(sentence), i, separator))
         }
 
-        return RET
+        return RET.toTypedArray()
     }
 
     /**
@@ -47,14 +58,22 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
      * *
      * @return
      */
-    private fun wordNGramsLevel(tokens: List<WrappedArray<String>>, N: Int, separator: String = "_"): List<String> {
-        val RET: MutableList<String>
+    private fun wordNGramsLevel(tokens: List<scala.collection.immutable.Map<String, String>>,
+                                N: Int,
+                                separator: String = "_")
+            : List<String> {
+
+        val RET: List<String>
 
         if (N < 2) {
             if (language == LANGUAGE.ENGLISH) {
-                RET = tokens.filter { token -> filterEnglishCandidate(listOf(token.apply(2))) }.map { token -> token.apply(1) }.toMutableList()
+                RET = tokens.filter { token ->
+                    filterEnglishCandidate(listOf(token[PosToken::posTag.name].get()))
+                }.map { token -> token[NLPToken::token.name].get() }.toMutableList()
             } else {
-                RET = tokens.filter { token -> filterSpanishCandidate(listOf(token.apply(2)), listOf(token.apply(1))) }.map { token ->
+                RET = tokens.filter { token ->
+                    filterSpanishCandidate(listOf(token[PosToken::posTag.name].get()), listOf(token[NLPToken::token.name].get()))
+                }.map { token ->
                     getSpanishLemma(token)
                 }.toMutableList()
             }
@@ -66,14 +85,14 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
                 val candidatePOSs = mutableListOf<String>()
                 val candidateLemmas = mutableListOf<String>()
                 for (j in 0..N - 1) {
-                    if (language == LANGUAGE.ENGLISH){
-                        candidateTokens.append(tokens[i + j].apply(1))
+                    if (language == LANGUAGE.ENGLISH) {
+                        candidateTokens.append(tokens[i + j][NLPToken::lemma.name].get())
                     } else {
                         candidateTokens.append(getSpanishLemma(tokens[i + j]))
                     }
 
-                    candidateLemmas.add(tokens[i + j].apply(1))
-                    candidatePOSs.add(tokens[i + j].apply(2))
+                    candidateLemmas.add(tokens[i + j][NLPToken::lemma.name].get())
+                    candidatePOSs.add(tokens[i + j][PosToken::posTag.name].get())
                     if (j < (N - 1)) {
                         candidateTokens.append(separator)
                     }
@@ -112,11 +131,11 @@ class ExtractFunction : AbstractFunction1<WrappedArray<WrappedArray<WrappedArray
 
     }
 
-    private fun getSpanishLemma(token : WrappedArray<String>) : String {
-        return if (token.apply(2) == "n"){
-            token.apply(0)
+    private fun getSpanishLemma(token: scala.collection.immutable.Map<String, String>): String {
+        return if (token[PosToken::posTag.name].get() == "n") {
+            token[NLPToken::token.name].get()
         } else {
-            token.apply(1)
+            token[NLPToken::lemma.name].get()
         }
     }
 
