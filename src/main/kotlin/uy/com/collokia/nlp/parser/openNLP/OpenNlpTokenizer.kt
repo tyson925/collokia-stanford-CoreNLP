@@ -2,10 +2,7 @@
 
 package uy.com.collokia.nlp.parser.openNLP
 
-import com.collokia.resources.OPENNLP_SENTENCE_RESOURCES_PATH_EN
-import com.collokia.resources.OPENNLP_SENTENCE_RESOURCES_PATH_ES
-import com.collokia.resources.OPENNLP_TOKEN_RESOURCES_PATH_EN
-import com.collokia.resources.OPENNLP_TOKEN_RESOURCES_PATH_ES
+import com.collokia.resources.*
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.SchemaUtils
@@ -19,6 +16,8 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
+import uy.com.collokia.nlp.parser.getSentenceSplitterModelName
+import uy.com.collokia.nlp.parser.getTokenizerModelName
 import java.io.Serializable
 
 const val TOKENIZED_CONTENT_COL_NAME = "tokenizedContenT"
@@ -31,6 +30,11 @@ val EN_SENTENCE_MODEL_NAME: String  by lazy {
 val ES_SENTENCE_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_ES).absolutePath
 }
+//= "opennlp/models/pt-sent.bin"
+val PT_SENTENCE_MODEL_NAME: String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_SENTENCE_RESOURCES_PATH_PT).absolutePath
+}
+
 // "opennlp/models/en-token.bin"
 val EN_TOKEN_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_EN).absolutePath
@@ -39,6 +43,12 @@ val EN_TOKEN_MODEL_NAME: String  by lazy {
 val ES_TOKEN_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_ES).absolutePath
 }
+
+val PT_TOKEN_MODEL_NAME: String  by lazy {
+    ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_PT).absolutePath
+}
+
+
 
 
 class OpenNlpTokenizer : Transformer, Serializable {
@@ -56,20 +66,22 @@ class OpenNlpTokenizer : Transformer, Serializable {
                 inputColName: String = "content",
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 isOutputRaw: Boolean = true,
-                sentenceDetectorModelName: String = EN_SENTENCE_MODEL_NAME,
-                tokenizerModelName: String = EN_TOKEN_MODEL_NAME
+                sentenceDetectorModelName: String = "",
+                tokenizerModelName: String = ""
     ) {
 
-        //SentenceModel()
-
         this.language = language
-        sdetectorWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpSentenceDetectorWrapper(EN_SENTENCE_MODEL_NAME)
-        else if (language == LANGUAGE.SPANISH) OpenNlpSentenceDetectorWrapper(ES_SENTENCE_MODEL_NAME)
-        else OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
+        sdetectorWrapper = if (sentenceDetectorModelName.isNotEmpty()) {
+            OpenNlpSentenceDetectorWrapper(sentenceDetectorModelName)
+        } else {
+            OpenNlpSentenceDetectorWrapper(getSentenceSplitterModelName(language))
+        }
 
-        tokenizerWrapper = if (language == LANGUAGE.ENGLISH) OpenNlpTokenizerWrapper(EN_TOKEN_MODEL_NAME)
-        else if (language == LANGUAGE.SPANISH) OpenNlpTokenizerWrapper(ES_TOKEN_MODEL_NAME)
-        else OpenNlpTokenizerWrapper(tokenizerModelName)
+        tokenizerWrapper = if (tokenizerModelName.isNotEmpty()) {
+            OpenNlpTokenizerWrapper(tokenizerModelName)
+        } else {
+            OpenNlpTokenizerWrapper(getTokenizerModelName(language))
+        }
 
         this.isRaw = isOutputRaw
         this.sparkSession = sparkSession
@@ -83,6 +95,7 @@ class OpenNlpTokenizer : Transformer, Serializable {
                         tokenizerWrapper.get().tokenize(sentence).toList()
                     }
                 } catch (e: Exception) {
+                    //println(e.printStackTrace())
                     println("problem with content: " + content)
                     content.split(Regex("\\W"))
                 }

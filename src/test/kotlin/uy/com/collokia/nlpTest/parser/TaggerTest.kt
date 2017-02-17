@@ -21,6 +21,7 @@ import uy.com.collokia.nlp.transformer.candidateNGram.CANDIDATE_NGRAM_OUTPUT_COL
 import uy.com.collokia.nlp.transformer.candidateNGram.CandidateNGram
 import uy.com.collokia.nlpTest.util.TAGGED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
+import uy.com.collokia.nlpTest.util.generateDataSet
 
 class TaggerTest() {
     companion object {
@@ -55,7 +56,7 @@ class TaggerTest() {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+        val testCorpus = constructTokenizedTestDataset(sparkSession, generateDataSet(jsc), isRaw = false, language = LANGUAGE.ENGLISH)
         taggerTest(sparkSession, testCorpus, isStoreToEs = true)
 
         closeSpark(jsc)

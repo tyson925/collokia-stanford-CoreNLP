@@ -13,11 +13,16 @@ import org.apache.spark.sql.types.MapType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.data.dataClasses.stackoverflow.SoLitleModel.SOThreadExtractValues
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
-import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizerRaw
+import uy.com.collokia.nlp.parser.mate.lemmatizer.*
+import uy.com.collokia.nlp.parser.mate.parser.ENGLISH_PARSER_MODEL_NAME
 import uy.com.collokia.nlp.parser.mate.parser.MateParser
+import uy.com.collokia.nlp.parser.mate.parser.PORTUGUESE_PARSER_MODEL_NAME
+import uy.com.collokia.nlp.parser.mate.parser.SPANISH_PARSER_MODEL_NAME
+import uy.com.collokia.nlp.parser.mate.tagger.ENGLISH_TAGGER_MODEL_NAME
 import uy.com.collokia.nlp.parser.mate.tagger.MateTagger
-import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
+import uy.com.collokia.nlp.parser.mate.tagger.PORTUGUESE_TAGGER_MODEL_NAME
+import uy.com.collokia.nlp.parser.mate.tagger.SPANISH_TAGGER_MODEL_NAME
+import uy.com.collokia.nlp.parser.openNLP.*
 import uy.com.collokia.nlp.transformer.ngram.NGramOnSentenceData
 import java.io.Serializable
 
@@ -58,7 +63,7 @@ enum class PARSER_TYPE {
 }
 
 enum class LANGUAGE {
-    ENGLISH, SPANISH
+    ENGLISH, SPANISH, PORTUGUESE
 }
 
 const val DEFAULT_NGRAM_SEPARATOR = "-"
@@ -78,6 +83,65 @@ fun toNLPContentRDD(dataset: Dataset<Row>,parserType: PARSER_TYPE) : JavaRDD<NLP
                 getToken(map,parserType)
             })
         })
+    }
+}
+
+fun getSentenceSplitterModelName(language: LANGUAGE) : String {
+    return if (language == LANGUAGE.ENGLISH) {
+        EN_SENTENCE_MODEL_NAME
+    } else if (language == LANGUAGE.SPANISH) {
+        ES_SENTENCE_MODEL_NAME
+    } else if (language == LANGUAGE.PORTUGUESE) {
+        PT_SENTENCE_MODEL_NAME
+    } else {
+        ""
+    }
+}
+fun getTokenizerModelName(language: LANGUAGE) : String {
+    return if (language == LANGUAGE.ENGLISH) {
+        EN_TOKEN_MODEL_NAME
+    } else if (language == LANGUAGE.SPANISH) {
+        ES_TOKEN_MODEL_NAME
+    } else if (language == LANGUAGE.PORTUGUESE) {
+        PT_TOKEN_MODEL_NAME
+    } else {
+        ""
+    }
+}
+
+fun getLemmatizerModelName(language: LANGUAGE) : String{
+    return if (language == LANGUAGE.ENGLISH) {
+        ENGLISH_LEMMATIZER_MODEL_NAME
+    } else if (language == LANGUAGE.SPANISH) {
+        SPANISH_LEMMATIZER_MODEL_NAME
+    } else if (language == LANGUAGE.PORTUGUESE) {
+        PORTUGUESE_LEMMATIZER_MODEL_NAME
+    } else {
+        ENGLISH_LEMMATIZER_MODEL_NAME
+    }
+}
+
+fun getTaggerModelName(language: LANGUAGE) : String {
+    return if (language == LANGUAGE.ENGLISH){
+        ENGLISH_TAGGER_MODEL_NAME
+    }else if (language == LANGUAGE.SPANISH) {
+        SPANISH_TAGGER_MODEL_NAME
+    } else if (language == LANGUAGE.PORTUGUESE) {
+        PORTUGUESE_TAGGER_MODEL_NAME
+    } else {
+        ENGLISH_TAGGER_MODEL_NAME
+    }
+}
+
+fun getParserModelName(language: LANGUAGE) : String {
+    return if (language == LANGUAGE.ENGLISH){
+        ENGLISH_PARSER_MODEL_NAME
+    }else if (language == LANGUAGE.SPANISH) {
+        SPANISH_PARSER_MODEL_NAME
+    } else if (language == LANGUAGE.PORTUGUESE) {
+        PORTUGUESE_PARSER_MODEL_NAME
+    } else {
+        ENGLISH_PARSER_MODEL_NAME
     }
 }
 

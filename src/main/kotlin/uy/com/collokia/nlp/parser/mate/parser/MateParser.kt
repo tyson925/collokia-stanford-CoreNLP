@@ -3,6 +3,7 @@
 package uy.com.collokia.nlp.parser.mate.parser
 
 import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_ES
+import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_PT
 import com.collokia.resources.MATE_STANFORD_RESOURCES_PATH_EN
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
@@ -19,11 +20,7 @@ import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.*
-import uy.com.collokia.nlp.parser.mate.lemmatizer.ENGLISH_LEMMATIZER_MODEL_NAME
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
-import uy.com.collokia.nlp.parser.mate.lemmatizer.SPANISH_LEMMATIZER_MODEL_NAME
-import uy.com.collokia.nlp.parser.mate.tagger.ENGLISH_TAGGER_MODEL_NAME
-import uy.com.collokia.nlp.parser.mate.tagger.SPANISH_TAGGER_MODEL_NAME
 import uy.com.collokia.nlp.parser.mate.tagger.TaggerWrapper
 import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.util.*
@@ -36,6 +33,10 @@ val ENGLISH_PARSER_MODEL_NAME: String by lazy {
 //"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
 val SPANISH_PARSER_MODEL_NAME: String by lazy {
     ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_ES).absolutePath
+}
+
+val PORTUGUESE_PARSER_MODEL_NAME : String by lazy {
+    ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_PT).absolutePath
 }
 
 
@@ -51,17 +52,22 @@ class MateParser : Transformer {
     val language: LANGUAGE
 
 
-    constructor(sparkSession: SparkSession, language: LANGUAGE = LANGUAGE.ENGLISH, inputColName: String = TOKENIZED_CONTENT_COL_NAME) {
+    constructor(sparkSession: SparkSession,
+                language: LANGUAGE = LANGUAGE.ENGLISH,
+                inputColName: String = TOKENIZED_CONTENT_COL_NAME,
+                lemmatizerModelName : String = "",
+                taggerModelName : String = "",
+                parserModelName : String = "") {
 
         this.sparkSession = sparkSession
-        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) ENGLISH_LEMMATIZER_MODEL_NAME else SPANISH_LEMMATIZER_MODEL_NAME
-        lemmatizerWrapper = LematizerWrapper(arrayOf("-model", lemmatizerModel))
+        val lemmatizerOptions = arrayOf("-model", if (lemmatizerModelName.isNotEmpty()) lemmatizerModelName else getLemmatizerModelName(language))
+        lemmatizerWrapper = LematizerWrapper(lemmatizerOptions)
 
-        val taggerModelName = if (language == LANGUAGE.ENGLISH) ENGLISH_TAGGER_MODEL_NAME else SPANISH_TAGGER_MODEL_NAME
-        taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
+        val taggerOptions = arrayOf("-model", if (taggerModelName.isNotEmpty()) taggerModelName else getTaggerModelName(language))
+        taggerWrapper = TaggerWrapper(taggerOptions)
 
-        val parserModelName = if (language == LANGUAGE.ENGLISH) ENGLISH_PARSER_MODEL_NAME else SPANISH_PARSER_MODEL_NAME
-        parserWrapper = ParserWrapper(arrayOf("-model", parserModelName))
+        val parserOptions = arrayOf("-model", if (parserModelName.isNotEmpty()) parserModelName else getParserModelName(language))
+        parserWrapper = ParserWrapper(parserOptions)
 
         this.inputColName = inputColName
         this.outputColName = "taggedContent"

@@ -14,13 +14,12 @@ import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.convertRDDToDF
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 import uy.com.collokia.common.utils.rdd.getLocalSparkSession
+import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.PARSER_TYPE
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizer
 import uy.com.collokia.nlp.parser.mate.lemmatizer.MateLemmatizerRaw
 import uy.com.collokia.nlp.parser.toNLPContentRDD
-import uy.com.collokia.nlpTest.util.LEMMATIZED_INDEX_NAME
-import uy.com.collokia.nlpTest.util.RAW_LEMMATIZED_INDEX_NAME
-import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
+import uy.com.collokia.nlpTest.util.*
 import java.io.Serializable
 
 
@@ -32,10 +31,25 @@ class LemmatizerTest : Serializable {
             val time = measureTimeInMillis {
                 val test = LemmatizerTest()
                 //test.readLemmatizedContentFromES()
-                test.writeLemmatizedContentToES(isRaw = false, isStoreToEs = false)
+                //test.writeLemmatizedContentToES(isRaw = false, isStoreToEs = false)
+                test.portugueseLemmatizerTest()
             }
             println("Execution time is ${time.second}")
         }
+    }
+
+    fun portugueseLemmatizerTest() {
+        val jsc = getLocalSparkContext("Test NLP parser", cores = 4)
+        val sparkSession = getLocalSparkSession("Test NLP parser")
+
+        val testCorpus = constructTokenizedTestDataset(sparkSession, generatePortugueseDataSet(jsc), language = LANGUAGE.PORTUGUESE, isRaw = true)
+
+        val lemmatizer = MateLemmatizerRaw(sparkSession, language = LANGUAGE.PORTUGUESE, isRawOutput = true)
+        val lemmatizedDataset = lemmatizer.transform(testCorpus)
+
+        lemmatizedDataset.show(10, false)
+
+        closeSpark(jsc)
     }
 
     fun writeLemmatizedContentToES(isRaw: Boolean, isStoreToEs: Boolean) {
@@ -43,10 +57,10 @@ class LemmatizerTest : Serializable {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
         if (isRaw) {
-            val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = true)
+            val testCorpus = constructTokenizedTestDataset(sparkSession, generateDataSet(jsc), language = LANGUAGE.ENGLISH, isRaw = true)
             rawLemmatizerTest(sparkSession, testCorpus, isStoreToEs = isStoreToEs)
         } else {
-            val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+            val testCorpus = constructTokenizedTestDataset(sparkSession, generateDataSet(jsc), language = LANGUAGE.ENGLISH, isRaw = false)
             lemmatizerTest(sparkSession, testCorpus, isStoreToEs = isStoreToEs)
         }
 

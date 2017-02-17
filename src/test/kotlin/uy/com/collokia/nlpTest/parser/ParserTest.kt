@@ -18,6 +18,7 @@ import uy.com.collokia.nlp.parser.openNLP.OpenNlpTokenizer
 import uy.com.collokia.nlp.parser.toNLPContentRDD
 import uy.com.collokia.nlpTest.util.PARSED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
+import uy.com.collokia.nlpTest.util.generateDataSet
 
 class ParserTest() {
     companion object {
@@ -38,7 +39,7 @@ class ParserTest() {
         val sparkSession = getLocalSparkSession("Test NLP parser")
 
 
-        val testCorpus = constructTokenizedTestDataset(jsc, sparkSession, isRaw = false)
+        val testCorpus = constructTokenizedTestDataset(sparkSession, generateDataSet(jsc), isRaw = false, language = LANGUAGE.ENGLISH)
 
         parserTest(sparkSession, testCorpus)
 

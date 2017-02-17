@@ -72,9 +72,9 @@ dependencies {
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
     compile files(['scalalib/lib.jar'])
 
-    compile "com.collokia.resources:mate:0.1"
+    compile "com.collokia.resources:mate:0.2"
     compile "com.collokia.resources:stopword:0.1"
-    compile "com.collokia.resources:opennlp:0.1"
+    compile "com.collokia.resources:opennlp:0.2"
 
     configurations.all {
         resolutionStrategy {

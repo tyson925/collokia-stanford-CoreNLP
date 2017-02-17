@@ -4,6 +4,7 @@ package uy.com.collokia.nlp.parser.mate.tagger
 
 import com.collokia.resources.MATE_POSTAGGER_RESOURCES_PATH_EN
 import com.collokia.resources.MATE_POSTAGGER_RESOURCES_PATH_ES
+import com.collokia.resources.MATE_POSTAGGER_RESOURCES_PATH_PT
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -18,13 +19,8 @@ import org.apache.spark.sql.types.StructType
 import scala.collection.JavaConversions
 import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
-import uy.com.collokia.nlp.parser.LANGUAGE
-import uy.com.collokia.nlp.parser.NLPToken
-import uy.com.collokia.nlp.parser.PosToken
-import uy.com.collokia.nlp.parser.mate.lemmatizer.ENGLISH_LEMMATIZER_MODEL_NAME
+import uy.com.collokia.nlp.parser.*
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LematizerWrapper
-import uy.com.collokia.nlp.parser.mate.lemmatizer.SPANISH_LEMMATIZER_MODEL_NAME
-import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.io.Serializable
 import java.util.*
@@ -38,13 +34,18 @@ val SPANISH_TAGGER_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_ES).absolutePath
 }
 
+//"data/mate/models/portuguese/tagger_pt.model"
+val PORTUGUESE_TAGGER_MODEL_NAME: String by lazy {
+    ResourceUtil.getResourceAsFile(MATE_POSTAGGER_RESOURCES_PATH_PT).absolutePath
+}
+
 const val TAGGER_OUTPUT_COL_NAME = "taggedContent"
 
-data class TaggedToken(var token: String, var lemma: String, var posTag : String) : Serializable
+data class TaggedToken(var token: String, var lemma: String, var posTag: String) : Serializable
 
 data class TaggedSentence(var taggedSentence: List<TaggedToken>) : Serializable
 
-data class TaggedContent(var taggedContent : List<TaggedSentence>) : Serializable
+data class TaggedContent(var taggedContent: List<TaggedSentence>) : Serializable
 
 
 class MateTagger : Transformer, Serializable {
@@ -61,17 +62,18 @@ class MateTagger : Transformer, Serializable {
     constructor(sparkSession: SparkSession,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = TOKENIZED_CONTENT_COL_NAME,
-                outputColName: String = TAGGER_OUTPUT_COL_NAME) {
+                outputColName: String = TAGGER_OUTPUT_COL_NAME,
+                lemmatizerModelName: String = "",
+                taggerModelName: String = "") {
 
         this.language = language
         this.sparkSession = sparkSession
 
-        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) ENGLISH_LEMMATIZER_MODEL_NAME else SPANISH_LEMMATIZER_MODEL_NAME
-        val options = arrayOf("-model", lemmatizerModel)
-        lemmatizerWrapper = LematizerWrapper(options)
+        val lemmatizerOptions = arrayOf("-model", if (lemmatizerModelName.isNotEmpty()) lemmatizerModelName else getLemmatizerModelName(language))
+        lemmatizerWrapper = LematizerWrapper(lemmatizerOptions)
 
-        val taggerModelName = if (language == LANGUAGE.ENGLISH) ENGLISH_TAGGER_MODEL_NAME else SPANISH_TAGGER_MODEL_NAME
-        taggerWrapper = TaggerWrapper(arrayOf("-model", taggerModelName))
+        val taggerOptions = arrayOf("-model", if (taggerModelName.isNotEmpty()) taggerModelName else getTaggerModelName(language))
+        taggerWrapper = TaggerWrapper(taggerOptions)
         this.inputColName = inputColName
         this.outputColName = outputColName
 
@@ -81,7 +83,7 @@ class MateTagger : Transformer, Serializable {
             val posTagger = taggerWrapper.get()
 
             val sentencesJava = JavaConversions.asJavaCollection(sentences).filter { sentence -> sentence.size() < 100 }
-            val results = ArrayList<Array<Map<String,String>>>(sentences.size())
+            val results = ArrayList<Array<Map<String, String>>>(sentences.size())
 
             sentencesJava.forEachIndexed { sentenceNum, tokens ->
 
@@ -112,7 +114,7 @@ class MateTagger : Transformer, Serializable {
                     values
                 }.toTypedArray()
 
-                results.add(sentenceNum,taggedValues)
+                results.add(sentenceNum, taggedValues)
             }
             results
         })

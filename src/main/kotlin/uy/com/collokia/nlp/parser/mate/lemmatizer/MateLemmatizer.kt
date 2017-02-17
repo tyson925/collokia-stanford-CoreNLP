@@ -4,6 +4,7 @@ package uy.com.collokia.nlp.parser.mate.lemmatizer
 
 import com.collokia.resources.MATE_LEMMATIZER_RESOURCES_PATH_EN
 import com.collokia.resources.MATE_LEMMATIZER_RESOURCES_PATH_ES
+import com.collokia.resources.MATE_LEMMATIZER_RESOURCES_PATH_PT
 import is2.data.SentenceData09
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -21,12 +22,14 @@ import scala.collection.mutable.WrappedArray
 import uy.com.collokia.common.utils.resources.ResourceUtil
 import uy.com.collokia.nlp.parser.LANGUAGE
 import uy.com.collokia.nlp.parser.NLPToken
+import uy.com.collokia.nlp.parser.getLemmatizerModelName
 import uy.com.collokia.nlp.parser.nlpTokenType
 import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.io.Serializable
 import java.util.*
 
 const val LEMMATIZED_CONTENT_COL_NAME = "lemmatizedContent"
+
 //"mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 val ENGLISH_LEMMATIZER_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_EN).absolutePath
@@ -34,6 +37,11 @@ val ENGLISH_LEMMATIZER_MODEL_NAME: String  by lazy {
 //"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.lemmatizer.model"
 val SPANISH_LEMMATIZER_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_ES).absolutePath
+}
+
+//"data/mate/models/portuguese/lemmatizer_pt.model"
+val PORTUGUESE_LEMMATIZER_MODEL_NAME: String  by lazy {
+    ResourceUtil.getResourceAsFile(MATE_LEMMATIZER_RESOURCES_PATH_PT).absolutePath
 }
 
 class MateLemmatizer : Transformer, Serializable {
@@ -47,12 +55,13 @@ class MateLemmatizer : Transformer, Serializable {
     constructor(sparkSession: SparkSession,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = TOKENIZED_CONTENT_COL_NAME,
-                outputColName: String = LEMMATIZED_CONTENT_COL_NAME) {
+                outputColName: String = LEMMATIZED_CONTENT_COL_NAME,
+                lemmatizerModelName: String = "") {
 
         this.sparkSession = sparkSession
         this.language = language
-        val lemmatizerModel = if (language == LANGUAGE.ENGLISH) ENGLISH_LEMMATIZER_MODEL_NAME else SPANISH_LEMMATIZER_MODEL_NAME
-        val options = arrayOf("-model", lemmatizerModel)
+
+        val options = arrayOf("-model", if (lemmatizerModelName.isNotEmpty()) lemmatizerModelName else getLemmatizerModelName(language))
         lemmatizerWrapper = LematizerWrapper(options)
 
         this.inputColName = inputColName
@@ -76,6 +85,7 @@ class MateLemmatizer : Transformer, Serializable {
                 val lemmatized = SentenceData09()
                 lemmatized.init(sentenceArray)
                 lemmatizer.apply(lemmatized)
+
                 val lemmas = lemmatized.plemmas
 
                 val contentIndex = results.map { sentence -> sentence.size }.sum()

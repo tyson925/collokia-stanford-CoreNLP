@@ -18,7 +18,7 @@ const val LEMMATIZED_INDEX_NAME = "lemmatizer_test"
 const val TAGGED_INDEX_NAME = "tagger_test"
 const val PARSED_INDEX_NAME = "parser_test"
 
-private fun generateDataSet(jsc: JavaSparkContext): JavaRDD<TestDocument> {
+fun generateDataSet(jsc: JavaSparkContext): JavaRDD<TestDocument> {
     val test = LinkedList<TestDocument>()
     test.add(TestDocument("1", "Stanford University is located in California. It is a great university."))
     test.add(TestDocument("2", "University of Szeged is,located in Hungary. It is a great university."))
@@ -34,15 +34,29 @@ private fun generateDataSet(jsc: JavaSparkContext): JavaRDD<TestDocument> {
     return jsc.parallelize(test)
 }
 
+fun generatePortugueseDataSet(jsc: JavaSparkContext) : JavaRDD<TestDocument> {
+    val test = LinkedList<TestDocument>()
 
-fun constructTokenizedTestDataset(jsc: JavaSparkContext, sparkSession: SparkSession, isRaw : Boolean): Dataset<Row> {
+    test.add(TestDocument("1", "O novo compromisso é de três anos, ea apresentação será nesta quarta."))
+    test.add(TestDocument("2", "A língua portuguesa, também designada português, é uma língua românica flexiva originada no galego-português falado no Reino da Galiza e no norte de Portugal."))
+    test.add(TestDocument("3", "Com a criação do Reino de Portugal em 1139 e a expansão para o sul como parte da Reconquista deu-se a difusão da língua pelas terras conquistadas e mais tarde."))
+    test.add(TestDocument("4", "Com as descobertas portuguesas, para o Brasil, África e outras partes do mundo."))
+
+    return jsc.parallelize(test)
+}
 
 
-    val testRdd = generateDataSet(jsc)
+fun constructTokenizedTestDataset(sparkSession: SparkSession,
+                                  testRDD : JavaRDD<TestDocument>,
+                                  language: LANGUAGE,
+                                  isRaw : Boolean): Dataset<Row> {
 
-    val input = sparkSession.createDataFrame(testRdd, TestDocument::class.java).toDF()
+
+    //val testRdd = generateDataSet(jsc)
+
+    val input = sparkSession.createDataFrame(testRDD, TestDocument::class.java).toDF()
     //val sparkSession = SparkSession.builder().master("local").appName("test").orCreate
-    val tokenizer = OpenNlpTokenizer(sparkSession, language = LANGUAGE.ENGLISH, isOutputRaw = isRaw)
+    val tokenizer = OpenNlpTokenizer(sparkSession, language = language, isOutputRaw = isRaw)
 
     val tokenized = tokenizer.transform(input)
 
