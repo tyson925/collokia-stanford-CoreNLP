@@ -1,9 +1,9 @@
 group 'com.collokia'
-version '1.0.6'
+version '1.0.7'
 description 'collokia spark natural language processing stuffs'
 
 buildscript {
-    ext.kotlin_version = '1.0.5'
+    ext.kotlin_version = '1.0.6'
     repositories {
         maven {
             url "https://collokia.artifactoryonline.com/collokia/collokia-internal"
@@ -119,7 +119,7 @@ repositories {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.3'
+    gradleVersion = '3.4'
 }
 
 sourceSets {

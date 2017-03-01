@@ -58,7 +58,7 @@ class ContentFilter : Transformer {
 
 
     override fun uid(): String {
-        return "conentFilter11111111111"
+        return "contentFilter11111111111"
     }
 
     override fun copy(p0: ParamMap?): Transformer {
@@ -75,7 +75,7 @@ class ContentFilter : Transformer {
     override fun transformSchema(schema: StructType?): StructType {
         val inputType = schema?.apply(schema.fieldIndex(inputColName))
         val inputTypeMetaData = inputType?.metadata()
-        val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
+        //val refType = DataTypes.createArrayType(DataTypes.StringType).javaClass
 
         if (inputTypeMetaData is DataTypes) {
             println("Input type must be StringType but got $inputTypeMetaData.")

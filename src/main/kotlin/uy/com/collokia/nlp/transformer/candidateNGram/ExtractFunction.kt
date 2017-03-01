@@ -114,20 +114,19 @@ class ExtractFunction :
 
     private fun filterEnglishCandidate(candidatePOSs: List<String>): Boolean {
 
-        val filteredPOSs = candidatePOSs.filter { pos -> if (pos.startsWith("NN") || pos == "JJ" || pos.equals(Regex("VB*"))) true else false }
-        return if (filteredPOSs.size == candidatePOSs.size) true else false
+        val filteredPOSs = candidatePOSs.filter { pos -> pos.startsWith("NN") || pos == "JJ" || pos.equals(Regex("VB*")) }
+        return filteredPOSs.size == candidatePOSs.size
     }
 
     private fun filterSpanishCandidate(candidatePOSs: List<String>, candidateLemma: List<String>): Boolean {
 
         val filteredPOSs = candidatePOSs.filterIndexed { index, pos ->
-            if (pos == "n" || (pos == "v" && (candidateLemma[index] != "ser" && candidateLemma[index] != "esta" &&
+            pos == "n" || (pos == "v" && (candidateLemma[index] != "ser" && candidateLemma[index] != "esta" &&
                     candidateLemma[index] != "estar" && candidateLemma[index] != "ir"
-                    && candidateLemma[index] != "del"))) true else false
+                    && candidateLemma[index] != "del"))
         }
 
-        return if (filteredPOSs.size == candidatePOSs.size) true
-        else false
+        return filteredPOSs.size == candidatePOSs.size
 
     }
 

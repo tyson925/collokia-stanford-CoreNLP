@@ -4,14 +4,14 @@ import uy.com.collokia.common.utils.measureTimeInMillis
 import uy.com.collokia.common.utils.rdd.closeSpark
 import uy.com.collokia.common.utils.rdd.getLocalSparkContext
 
-class WordToVecExample() {
+class WordToVecExample {
     companion object {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {
                 val jsc = getLocalSparkContext("spark")
 
                 val corpus = jsc.textFile("./../collokia-data-es-indexer/data/word2vec/spanish/text.txt").map { line ->
-                    line.split(" ") as Iterable<String>
+                    line.split(" ")
                 }
 
                 val model = org.apache.spark.mllib.feature.Word2Vec().fit(corpus)

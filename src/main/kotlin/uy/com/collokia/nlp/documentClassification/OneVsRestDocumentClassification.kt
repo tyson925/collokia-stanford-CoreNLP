@@ -26,7 +26,7 @@ import uy.com.collokia.nlp.documentClassification.vtm.*
 import uy.com.collokia.nlp.parser.mate.lemmatizer.LEMMATIZED_CONTENT_COL_NAME
 import uy.com.collokia.nlp.transformer.ngram.NGramInRawInput
 
-const val OVR_MODEL = "./data/model/ovrDectisonTree"
+const val OVR_MODEL = "./data/model/ovrDecisionTree"
 const val LABELS = "./data/model/labelIndexer_2"
 const val REUTERS_DATA = "./data/reuters/json/reuters.json"
 const val VTM_PIPELINE_MODEL_NAME = "./data/model/vtmPipeLine"

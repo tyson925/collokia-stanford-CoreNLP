@@ -20,7 +20,7 @@ import uy.com.collokia.nlp.parser.getSentenceSplitterModelName
 import uy.com.collokia.nlp.parser.getTokenizerModelName
 import java.io.Serializable
 
-const val TOKENIZED_CONTENT_COL_NAME = "tokenizedContenT"
+const val TOKENIZED_CONTENT_COL_NAME = "tokenizedContent"
 
 // "opennlp/models/en-sent.bin"
 val EN_SENTENCE_MODEL_NAME: String  by lazy {
