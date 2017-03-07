@@ -15,7 +15,7 @@ class ExtractFunction :
                 Array<String>>, Serializable {
 
     companion object {
-        const val NUMBER_OF_NGRAMS = 3
+        const val NUMBER_OF_NGRAMS = 4
     }
 
     val language: LANGUAGE

@@ -11,7 +11,7 @@ import uy.com.collokia.nlpTest.util.constructLemmatizedTestDataset
 import java.io.Serializable
 
 
-class NGramTransformerTest() : Serializable {
+class NGramTransformerTest : Serializable {
 
     companion object {
 

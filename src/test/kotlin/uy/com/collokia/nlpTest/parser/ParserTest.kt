@@ -20,7 +20,7 @@ import uy.com.collokia.nlpTest.util.PARSED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 import uy.com.collokia.nlpTest.util.generateDataSet
 
-class ParserTest() {
+class ParserTest {
     companion object {
         const val EDUCAR_PARSED_CORPUS = "./../../../data/dataset/educarCorpus/"
         const val EDUCAR_CORPUS = "./../../../../collokia-data-es-indexer/data/educar/textos.json"

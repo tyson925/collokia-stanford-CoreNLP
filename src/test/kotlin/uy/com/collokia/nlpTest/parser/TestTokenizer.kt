@@ -10,7 +10,7 @@ import java.io.Serializable
 
 data class TestDocument(var id : String, var content : String) : Serializable
 
-class TestTokenizer() : Serializable {
+class TestTokenizer : Serializable {
 
     companion object {
         const val TEXT = "La jornada se realiza con motivo del 30 ° aniversario del Área Educación de FLACSO. Por este motivo invitan a aquellos investigadores en formación que quieran dar a conocer sus trabajos, a enviar sus resúmenes."

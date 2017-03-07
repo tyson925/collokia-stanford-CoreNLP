@@ -23,7 +23,7 @@ import uy.com.collokia.nlpTest.util.TAGGED_INDEX_NAME
 import uy.com.collokia.nlpTest.util.constructTokenizedTestDataset
 import uy.com.collokia.nlpTest.util.generateDataSet
 
-class TaggerTest() {
+class TaggerTest {
     companion object {
         @JvmStatic fun main(args: Array<String>) {
             val time = measureTimeInMillis {

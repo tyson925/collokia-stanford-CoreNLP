@@ -32,7 +32,7 @@ class MateLemmatizerRaw : Transformer, Serializable {
                 isRawOutput: Boolean,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = TOKENIZED_CONTENT_COL_NAME,
-                outputColName: String = LEMMATIZED_CONTENT_COL_NAME) {
+                outputColName: String = inputColName) {
 
         this.sparkSession = sparkSession
         this.isRawOutput = isRawOutput
@@ -42,7 +42,7 @@ class MateLemmatizerRaw : Transformer, Serializable {
         lemmatizerWrapper = LematizerWrapper(options)
 
         this.inputColName = inputColName
-        this.outputColName = outputColName
+        this.outputColName = "${LEMMATIZER_PREFIX}_$outputColName"
 
         val rawLemmatizer = UDF1({ tokens: WrappedArray<String> ->
             val lemmatizer = lemmatizerWrapper.get()

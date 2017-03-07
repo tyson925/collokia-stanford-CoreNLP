@@ -185,18 +185,23 @@ fun lemmatizeContent(sparkSession: SparkSession,
                      dataset: Dataset<Row>,
                      inputColName: String = SOThreadExtractValues::content.name,
                      language: LANGUAGE = LANGUAGE.ENGLISH,
-                     isOutputRaw: Boolean = false): Dataset<Row> {
+                     isOutputRaw: Boolean = false,
+                     isDrop : Boolean = true): Dataset<Row> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = isOutputRaw, language = language).setInputColName(inputColName)
     val lemmatizer = if (isOutputRaw) {
-        MateLemmatizerRaw(sparkSession, isRawOutput = isOutputRaw)
+        MateLemmatizerRaw(sparkSession, isRawOutput = isOutputRaw, inputColName = tokenizer.outputColName, outputColName = inputColName)
     } else {
-        MateLemmatizer(sparkSession, language = language).setInputColName(tokenizer.outputColName)
+        MateLemmatizer(sparkSession, language = language, inputColName = tokenizer.outputColName, outputColName = inputColName)
     }
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
     val analyzer = textAnalyzer.fit(dataset)
-    val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
+    val analyzedData = if (isDrop) {
+        analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
+    } else {
+        analyzer.transform(dataset).drop(tokenizer.outputColName)
+    }
     return analyzedData
 }
 

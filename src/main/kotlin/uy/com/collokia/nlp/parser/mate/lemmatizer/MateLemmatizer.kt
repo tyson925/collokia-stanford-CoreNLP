@@ -28,7 +28,9 @@ import uy.com.collokia.nlp.parser.openNLP.TOKENIZED_CONTENT_COL_NAME
 import java.io.Serializable
 import java.util.*
 
-const val LEMMATIZED_CONTENT_COL_NAME = "lemmatizedContent"
+const val LEMMATIZER_PREFIX = "lemmatized"
+
+const val LEMMATIZED_CONTENT_COL_NAME = "${LEMMATIZER_PREFIX}_content"
 
 //"mate/models/english/CoNLL2009-ST-English-ALL.anna-3.3.lemmatizer.model"
 val ENGLISH_LEMMATIZER_MODEL_NAME: String  by lazy {
@@ -52,10 +54,11 @@ class MateLemmatizer : Transformer, Serializable {
     val sparkSession: SparkSession
     var language: LANGUAGE
     val udfName = "lemmatizer"
+
     constructor(sparkSession: SparkSession,
                 language: LANGUAGE = LANGUAGE.ENGLISH,
                 inputColName: String = TOKENIZED_CONTENT_COL_NAME,
-                outputColName: String = LEMMATIZED_CONTENT_COL_NAME,
+                outputColName: String = inputColName,
                 lemmatizerModelName: String = "") {
 
         this.sparkSession = sparkSession
@@ -65,8 +68,7 @@ class MateLemmatizer : Transformer, Serializable {
         lemmatizerWrapper = LematizerWrapper(options)
 
         this.inputColName = inputColName
-        this.outputColName = outputColName
-
+        this.outputColName = "${LEMMATIZER_PREFIX}_$outputColName"
 
         val lemmatizerUDF = UDF1({ sentences: WrappedArray<WrappedArray<String>> ->
             val lemmatizer = lemmatizerWrapper.get()
@@ -105,7 +107,6 @@ class MateLemmatizer : Transformer, Serializable {
             }
             results
         })
-        //val outputType = outputType(false)
 
         sparkSession.udf().register(udfName, lemmatizerUDF, DataTypes.createArrayType(DataTypes.createArrayType(nlpTokenType())))
 
