@@ -2,7 +2,7 @@
 
 package uy.com.collokia.nlp.parser.mate.parser
 
-import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_ES
+//import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_ES
 import com.collokia.resources.MATE_PARSER_RESOURCES_PATH_PT
 import com.collokia.resources.MATE_STANFORD_RESOURCES_PATH_EN
 import is2.data.SentenceData09
@@ -32,7 +32,8 @@ val ENGLISH_PARSER_MODEL_NAME: String by lazy {
 }
 //"mate/models/spanish/CoNLL2009-ST-Spanish-ALL.anna-3.3.parser.model"
 val SPANISH_PARSER_MODEL_NAME: String by lazy {
-    ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_ES).absolutePath
+    //ResourceUtil.getResourceAsFile(MATE_PARSER_RESOURCES_PATH_ES).absolutePath
+    "empty"
 }
 
 val PORTUGUESE_PARSER_MODEL_NAME : String by lazy {
