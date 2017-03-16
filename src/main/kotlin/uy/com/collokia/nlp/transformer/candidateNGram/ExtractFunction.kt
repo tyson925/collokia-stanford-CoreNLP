@@ -120,18 +120,53 @@ class ExtractFunction :
 
     private fun filterSpanishCandidate(candidatePOSs: List<String>, candidateLemma: List<String>): Boolean {
 
-        val filteredPOSs = candidatePOSs.filterIndexed { index, pos ->
-            pos == "n" || (pos == "v" && (candidateLemma[index] != "ser" && candidateLemma[index] != "esta" &&
-                    candidateLemma[index] != "estar" && candidateLemma[index] != "ir"
-                    && candidateLemma[index] != "del"))
+        val filteredPOSs = if (candidatePOSs.size > 2) {
+            if (isValidSequence(candidatePOSs, candidateLemma)) candidatePOSs else listOf()
+        } else {
+            candidatePOSs.filterIndexed { index, pos ->
+                isValidToken(pos, candidateLemma[index])
+            }
         }
 
         return filteredPOSs.size == candidatePOSs.size
 
     }
 
+    private fun isValidSequence(candidatePOSs: List<String>, candidateLemma: List<String>): Boolean {
+        val isValidFistToken = isValidToken(candidatePOSs.first(), candidateLemma.first())
+        val isValidLastToken = isValidToken(candidatePOSs.last(), candidateLemma.last())
+
+        val middleTokens = (1..candidatePOSs.size-2).map { index ->
+            isValidToken(candidatePOSs[index],candidateLemma[1]) || isSpanishADP(candidatePOSs[index])
+        }.filter { it }
+
+        val isValidSequence = middleTokens.size == candidatePOSs.size -2
+
+        return isValidSequence && isValidFistToken && isValidLastToken
+
+    }
+
+    private fun isValidToken(pos: String, lemma: String): Boolean {
+        return isSpanishNoun(pos) || isSpanishVerb(pos, lemma)
+    }
+
+    private fun isSpanishVerb(pos: String, verb: String): Boolean {
+        return (pos == "VERB" && (verb != "ser" && verb != "esta" &&
+                verb != "estar" && verb != "ir"
+                && verb != "del"))
+
+    }
+
+    private fun isSpanishNoun(pos: String): Boolean {
+        return pos == "PROPN" || pos == "NOUN"
+    }
+
+    private fun isSpanishADP(pos: String): Boolean {
+        return pos == "ADP"
+    }
+
     private fun getSpanishLemma(token: scala.collection.immutable.Map<String, String>): String {
-        return if (token[PosToken::posTag.name].get() == "n") {
+        return if (token[PosToken::posTag.name].get() == "NOUN" || token[PosToken::posTag.name].get() == "PROPN") {
             token[NLPToken::token.name].get()
         } else {
             token[NLPToken::lemma.name].get()
