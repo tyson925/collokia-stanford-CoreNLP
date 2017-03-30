@@ -3,7 +3,7 @@ version '1.0.7.5'
 description 'collokia spark natural language processing stuffs'
 
 buildscript {
-    ext.kotlin_version = '1.0.6'
+    ext.kotlin_version = '1.1.1'
     repositories {
         maven {
             url "https://collokia.artifactoryonline.com/collokia/collokia-internal"

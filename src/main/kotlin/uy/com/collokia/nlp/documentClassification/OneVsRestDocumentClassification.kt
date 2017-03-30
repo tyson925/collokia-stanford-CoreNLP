@@ -36,7 +36,10 @@ const val TAGS_PIPELINE_MODEL_NAME = "./data/model/tagsPipeLine"
 //const val corpusFileName = "./data/classification/dzone/dzone.parquet"
 //val formatter = DecimalFormat("#0.00")
 
-fun generateDzoneVTM(jsc: JavaSparkContext, corpus: Dataset<Row>, tagColName: String = tagInputColName, isTest: Boolean = false)
+fun generateDzoneVTM(jsc: JavaSparkContext,
+                     corpus: Dataset<Row>,
+                     tagColName: String = TRAIT_COL_NAME,
+                     isTest: Boolean = false)
         : Dataset<Row> {
 
     val stopwords = loadStopwords(jsc)
@@ -47,7 +50,9 @@ fun generateDzoneVTM(jsc: JavaSparkContext, corpus: Dataset<Row>, tagColName: St
     return dataset
 }
 
-fun generateDzoneVTM(jsc: JavaSparkContext, sparkSession: SparkSession, tagColName: String = tagInputColName): Dataset<Row> {
+fun generateDzoneVTM(jsc: JavaSparkContext,
+                     sparkSession: SparkSession,
+                     tagColName: String = TRAIT_COL_NAME): Dataset<Row> {
 
     val stopwords = loadStopwords(jsc)
 
@@ -59,9 +64,10 @@ fun generateDzoneVTM(jsc: JavaSparkContext, sparkSession: SparkSession, tagColNa
 
 
 fun generateVTM(corpus: Dataset<Row>,
+
                 stopwords: Broadcast<Array<String>>,
                 isRunLocal: Boolean,
-                tagColName: String = tagInputColName,
+                tagColName: String = TRAIT_COL_NAME,
                 isTest: Boolean = false): Dataset<Row> {
 
     val ngramPipe = constructNgramsPipeline(constructNgrams(stopwords = stopwords.value.toSet(),
@@ -69,8 +75,8 @@ fun generateVTM(corpus: Dataset<Row>,
             toLowercase = true))
 
     val parsedCorpus = ngramPipe.fit(corpus).transform(corpus).drop(LEMMATIZED_CONTENT_COL_NAME,
-            LEMMATIZED_CONTENT_COL_NAME + "_" + tokenizerOutputCol,
-            LEMMATIZED_CONTENT_COL_NAME + "_" + removeOutputCol)
+            LEMMATIZED_CONTENT_COL_NAME + "_" + TOKENIZER_OUTPUT_COL_NAME,
+            LEMMATIZED_CONTENT_COL_NAME + "_" + REMOVE_OUTPUT_COL_NAME)
 
     val vtmModel = loadPipelineModel(isTest = isTest,
             isRunLocal = isRunLocal,
@@ -80,8 +86,8 @@ fun generateVTM(corpus: Dataset<Row>,
             inputColName = (ngramPipe.stages.last() as NGramInRawInput).outputCol)
 
 
-    val vtm = vtmModel.transform(parsedCorpus).drop(LEMMATIZED_CONTENT_COL_NAME + "_" + ngramOutputCol,
-            LEMMATIZED_CONTENT_COL_NAME + "_" + cvModelOutputCol)
+    val vtm = vtmModel.transform(parsedCorpus).drop(LEMMATIZED_CONTENT_COL_NAME + "_" + NGRAM_OUTPUT_COL_NAME,
+            LEMMATIZED_CONTENT_COL_NAME + "_" + TERM_FREQUENCY_COL_NAME)
 
     val indexer = StringIndexer().setInputCol("category").setOutputCol(LABEL_COL_NAME)
 
@@ -105,8 +111,8 @@ fun generateVTM(corpus: Dataset<Row>,
             toLowercase = false))
 
     val parsedCorpusTitle = titleNgramPipe.fit(indexedVTM).transform(indexedVTM).drop(
-            "title_" + tokenizerOutputCol,
-            "title_" + removeOutputCol)
+            "title_" + TOKENIZER_OUTPUT_COL_NAME,
+            "title_" + REMOVE_OUTPUT_COL_NAME)
 
     println("title output colname: " + (titleNgramPipe.stages.last() as NGramInRawInput).outputCol)
 
@@ -118,8 +124,8 @@ fun generateVTM(corpus: Dataset<Row>,
             inputColName = (titleNgramPipe.stages.last() as NGramInRawInput).outputCol)
 
 
-    val vtmTitleCorpus = vtmTitlePipelineModel.transform(parsedCorpusTitle).drop("title_" + ngramOutputCol,
-            "title_" + cvModelOutputCol)
+    val vtmTitleCorpus = vtmTitlePipelineModel.transform(parsedCorpusTitle).drop("title_" + NGRAM_OUTPUT_COL_NAME,
+            "title_" + TERM_FREQUENCY_COL_NAME)
 
 
 
@@ -133,8 +139,8 @@ fun generateVTM(corpus: Dataset<Row>,
         model
     }
 
-    val fullParsedCorpus = vtmTagPipelineModel.transform(vtmTitleCorpus).drop(tagColName + "_" + tokenizerOutputCol,
-            tagColName + "_" + cvModelOutputCol)
+    val fullParsedCorpus = vtmTagPipelineModel.transform(vtmTitleCorpus).drop(tagColName + "_" + TOKENIZER_OUTPUT_COL_NAME,
+            tagColName + "_" + TERM_FREQUENCY_COL_NAME)
 
     val contentScaler = vtmModel.stages().last() as StandardScalerModel
 
