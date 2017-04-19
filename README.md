@@ -5,21 +5,17 @@ Apache Spark-based Natural Language Processing approach to automatically process
 Example of Spanish tokenization:
 
 `val tokenizer = OpenNlpTokenizer(sparkSession, inputColName = TestDocument::content.name,language =  LANGUAGE.SPANISH, isOutputRaw = false)
-
 val tokenized = tokenizer.transform(testCorpus)
-
 tokenized.show(10,false)`
 
 Portuguese lemmatization:
 
 `val lemmatizer = MateLemmatizerRaw(sparkSession, language = LANGUAGE.PORTUGUESE, isRawOutput = true)
-
 val lemmatizedDataset = lemmatizer.transform(testCorpus)`
 
 English POS tagging
 
 `val tagger = MateTagger(sparkSession, language = LANGUAGE.ENGLISH, inputColName = TestDocument::content.name)
-
 val taggedContent = tagger.transform(testCorpus)`
 
 English Dependency parsing
