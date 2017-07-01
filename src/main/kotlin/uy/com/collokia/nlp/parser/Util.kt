@@ -175,10 +175,10 @@ fun tokenizeContent(sparkSession: SparkSession,
                     dataset: Dataset<Row>,
                     inputColName: String = SOThreadExtractValues::content.name,
                     language: LANGUAGE = LANGUAGE.ENGLISH,
-                    isOutputRaw: Boolean = false): Dataset<Row> {
+                    isOutputRaw: Boolean = false): Pair<Dataset<Row>,String> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = isOutputRaw, language = language).setInputColName(inputColName)
-    return tokenizer.transform(dataset)
+    return Pair(tokenizer.transform(dataset),tokenizer.outputColName)
 }
 
 fun lemmatizeContent(sparkSession: SparkSession,
@@ -186,7 +186,7 @@ fun lemmatizeContent(sparkSession: SparkSession,
                      inputColName: String = SOThreadExtractValues::content.name,
                      language: LANGUAGE = LANGUAGE.ENGLISH,
                      isOutputRaw: Boolean = false,
-                     isDrop : Boolean = true): Dataset<Row> {
+                     isDrop : Boolean = false): Pair<Dataset<Row>,String> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = isOutputRaw, language = language).setInputColName(inputColName)
     val lemmatizer = if (isOutputRaw) {
@@ -194,36 +194,39 @@ fun lemmatizeContent(sparkSession: SparkSession,
     } else {
         MateLemmatizer(sparkSession, language = language, inputColName = tokenizer.outputColName, outputColName = inputColName)
     }
-    val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
+    val textLemmatizer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer))
 
-    val analyzer = textAnalyzer.fit(dataset)
-    val analyzedData = if (isDrop) {
-        analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
+    val lemmatizerModel = textLemmatizer.fit(dataset)
+    val outputColName = if (isOutputRaw) (lemmatizer as MateLemmatizerRaw).outputColName else (lemmatizer as MateLemmatizer).outputColName
+
+    return if (isDrop) {
+        Pair(lemmatizerModel.transform(dataset).drop(tokenizer.outputColName, inputColName),outputColName)
     } else {
-        analyzer.transform(dataset).drop(tokenizer.outputColName)
+        Pair(lemmatizerModel.transform(dataset).drop(tokenizer.outputColName), outputColName)
     }
-    return analyzedData
 }
 
 fun ngramLemmatizeContent(sparkSession: SparkSession,
                           dataset: Dataset<Row>,
                           inputColName: String = "content",
-                          language: LANGUAGE = LANGUAGE.ENGLISH): Dataset<Row> {
+                          language: LANGUAGE = LANGUAGE.ENGLISH,
+                          isDrop : Boolean = false): Pair<Dataset<Row>, String> {
+
     val tokenizer = OpenNlpTokenizer(sparkSession, language = language, isOutputRaw = false, inputColName = inputColName)
     val lemmatizer = MateLemmatizer(sparkSession, language = language, inputColName = tokenizer.outputColName)
     val ngram = NGramOnSentenceData().setInputCol(lemmatizer.outputColName)
     val textAnalyzer = Pipeline().setStages(arrayOf(tokenizer, lemmatizer, ngram))
     val analyzer = textAnalyzer.fit(dataset)
 
-    val analyzedData = analyzer.transform(dataset).drop(inputColName, tokenizer.outputColName, lemmatizer.outputColName)
-    return analyzedData
+    val analyzedData = if (isDrop) analyzer.transform(dataset).drop(tokenizer.outputColName,lemmatizer.outputColName) else analyzer.transform(dataset)
+    return Pair(analyzedData,ngram.outputCol)
 }
 
 fun postTagContent(sparkSession: SparkSession,
                    dataset: Dataset<Row>,
                    inputColName: String = SOThreadExtractValues::content.name,
                    language: LANGUAGE = LANGUAGE.ENGLISH
-): Dataset<Row> {
+): Pair<Dataset<Row>,String> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = false, language = language).setInputColName(inputColName)
     val tagger = MateTagger(sparkSession, language = language).setInputColName(tokenizer.outputColName)
@@ -231,14 +234,14 @@ fun postTagContent(sparkSession: SparkSession,
 
     val analyzer = textAnalyzer.fit(dataset)
     val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
-    return analyzedData
+    return Pair(analyzedData,tagger.outputColName)
 }
 
 fun parseContent(sparkSession: SparkSession,
                  dataset: Dataset<Row>,
                  inputColName: String = SOThreadExtractValues::content.name,
                  language: LANGUAGE = LANGUAGE.ENGLISH
-): Dataset<Row> {
+): Pair<Dataset<Row>,String> {
 
     val tokenizer = OpenNlpTokenizer(sparkSession, isOutputRaw = false, language = language).setInputColName(inputColName)
     val parser = MateParser(sparkSession, language = language).setInputColName(tokenizer.outputColName)
@@ -246,5 +249,5 @@ fun parseContent(sparkSession: SparkSession,
 
     val analyzer = textAnalyzer.fit(dataset)
     val analyzedData = analyzer.transform(dataset).drop(tokenizer.outputColName, inputColName)
-    return analyzedData
+    return Pair(analyzedData,parser.outputColName)
 }

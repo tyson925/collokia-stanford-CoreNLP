@@ -38,7 +38,7 @@ class TaggerTest {
 
     fun taggerTest(sparkSession: SparkSession, testCorpus: Dataset<Row>, isStoreToEs : Boolean) {
 
-        val tagger = MateTagger(sparkSession)
+        val tagger = MateTagger(sparkSession, language = LANGUAGE.ENGLISH, inputColName = TestDocument::content.name)
         val taggedContent = tagger.transform(testCorpus)
 
         taggedContent.show(10, false)

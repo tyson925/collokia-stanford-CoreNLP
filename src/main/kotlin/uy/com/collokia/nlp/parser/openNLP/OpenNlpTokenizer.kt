@@ -48,9 +48,6 @@ val PT_TOKEN_MODEL_NAME: String  by lazy {
     ResourceUtil.getResourceAsFile(OPENNLP_TOKEN_RESOURCES_PATH_PT).absolutePath
 }
 
-
-
-
 class OpenNlpTokenizer : Transformer, Serializable {
 
     var tokenizerWrapper: OpenNlpTokenizerWrapper

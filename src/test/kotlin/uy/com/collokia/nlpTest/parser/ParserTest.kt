@@ -48,7 +48,7 @@ class ParserTest {
 
     fun parserTest(sparkSession: SparkSession, testCorpus: Dataset<Row>) {
 
-        val parser = MateParser(sparkSession)
+        val parser = MateParser(sparkSession, language = LANGUAGE.ENGLISH,inputColName = TestDocument::content.name)
         val parsedContent = parser.transform(testCorpus)
 
         val parsedContentRDD = toNLPContentRDD(parsedContent,PARSER_TYPE.PARSER)
