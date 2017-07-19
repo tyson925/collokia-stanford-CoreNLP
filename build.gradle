@@ -24,10 +24,14 @@ buildscript {
         maven {
             url 'http://dl.bintray.com/jaysonminard/kohesive'
         }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
         //classpath "com.collokia:kluster-gradle-plugin:0.2.1.4"
+        classpath "com.netflix.nebula:gradle-resolution-rules-plugin:5.0.0"
     }
 }
 apply plugin: 'java'
@@ -35,8 +39,9 @@ apply plugin: 'maven'
 apply plugin: 'idea'
 apply plugin: 'kotlin'
 //apply plugin: 'kluster'
-apply plugin: 'scala'
+//apply plugin: 'scala'
 apply plugin: 'maven-publish'
+apply plugin: "nebula.resolution-rules"
 
 //mainClassName = 'uy.com.collokia.runSparkOnEMR.jobs.DzoneIndexerJob'
 
@@ -46,6 +51,10 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 
 dependencies {
+
+    nebulaResolutionRules {
+        optional = ['slf4j-bridge']
+    }
 
     compile "org.elasticsearch:elasticsearch:$versionElasticSearch"
     compile "org.elasticsearch.client:transport:$versionElasticSearch"
@@ -69,8 +78,8 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-core:$version_jackson"
     compile "com.fasterxml.jackson.core:jackson-databind:$version_jackson"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$version_jackson_kotlin"
-    compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
-    compile files(['scalalib/lib.jar'])
+    //compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:$version_jackson_scala"
+    //compile files(['scalalib/lib.jar'])
 
     compile "com.collokia.resources:mate:$mateVersion"
     compile "com.collokia.resources:stopword:$stopWordVersion"
@@ -115,6 +124,9 @@ repositories {
     }
     maven {
         url 'http://dl.bintray.com/jaysonminard/kohesive'
+    }
+    maven {
+        url "https://plugins.gradle.org/m2/"
     }
 }
 

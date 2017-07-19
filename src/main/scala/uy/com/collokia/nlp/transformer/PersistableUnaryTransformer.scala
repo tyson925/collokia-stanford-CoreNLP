@@ -6,7 +6,7 @@ import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, I
 
 
 
-abstract class PersistableUnaryTransformer[IN, OUT, T<:UnaryTransformer[IN, OUT, T]] extends UnaryTransformer[IN, OUT, T] with DefaultParamsReadable[T] with DefaultParamsWritable with Identifiable
+//abstract class PersistableUnaryTransformer[IN, OUT, T<:UnaryTransformer[IN, OUT, T]] extends UnaryTransformer[IN, OUT, T] with DefaultParamsReadable[T] with DefaultParamsWritable with Identifiable
 
 
 
